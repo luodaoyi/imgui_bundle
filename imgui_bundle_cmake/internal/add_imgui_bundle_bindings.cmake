@@ -54,7 +54,7 @@ function(add_imgui_bundle_bindings)
 
     # Disable optimizations on release build for msvc
     # (leads to compilation times of > 3 hours!!!)
-    if (MSVC)
-        target_compile_options(${python_native_module_name} PRIVATE $<$<CONFIG:Release>:/Od>)
-    endif()
+#    if (MSVC)
+#        target_compile_options(${python_native_module_name} PRIVATE $<$<CONFIG:Release>:/Od>)
+#    endif()
 endfunction()
