@@ -1056,2789 +1056,2789 @@ void py_init_module_implot(nb::module_& m)
             PlotLine_adapt_exclude_params(label_id, xs, ys, flags, offset);
         },     nb::arg("label_id"), nb::arg("xs"), nb::arg("ys"), nb::arg("flags") = 0, nb::arg("offset") = 0);
 
-    m.def("plot_scatter",
-        [](const char * label_id, const nb::ndarray<> & values, double xscale = 1, double xstart = 0, ImPlotScatterFlags flags = 0, int offset = 0)
-        {
-            auto PlotScatter_adapt_c_buffers = [](const char * label_id, const nb::ndarray<> & values, double xscale = 1, double xstart = 0, ImPlotScatterFlags flags = 0, int offset = 0, int stride = -1)
-            {
-                // Check if the array is 1D and C-contiguous
-                if (! (values.ndim() == 1 && values.stride(0) == 1))
-                    throw std::runtime_error("The array must be 1D and contiguous");
-
-                // convert nb::ndarray to C standard buffer (const)
-                const void * values_from_pyarray = values.data();
-                size_t values_count = values.shape(0);
-
-                // process stride default value (which was a sizeof in C++)
-                int values_stride = stride;
-                if (values_stride == -1)
-                    values_stride = (int)values.itemsize();
-
-                using np_uint_l = uint64_t;
-                using np_int_l = int64_t;
-
-                // Define a lambda to compute the letter code for the buffer type
-                auto _nanobind_buffer_type_to_letter_code = [](uint8_t dtype_code, size_t sizeof_item)  -> char
-                {
-                    #define DCODE(T) static_cast<uint8_t>(nb::dlpack::dtype_code::T)
-                        const std::array<std::tuple<uint8_t, size_t, char>, 11> mappings = {{
-                            {DCODE(UInt), 1, 'B'}, {DCODE(UInt), 2, 'H'}, {DCODE(UInt), 4, 'I'}, {DCODE(UInt), 8, 'L'},
-                            {DCODE(Int), 1, 'b'}, {DCODE(Int), 2, 'h'}, {DCODE(Int), 4, 'i'}, {DCODE(Int), 8, 'l'},
-                            {DCODE(Float), 4, 'f'}, {DCODE(Float), 8, 'd'}, {DCODE(Float), 16, 'g'}
-                        }};
-                    #undef DCODE
-                    for (const auto& [code_val, size, letter] : mappings)
-                        if (code_val == dtype_code && size == sizeof_item)
-                            return letter;
-                    throw std::runtime_error("Unsupported dtype");
-                };
-
-                // Compute the letter code for the buffer type
-                uint8_t dtype_code_values = values.dtype().code;
-                size_t sizeof_item_values = values.dtype().bits / 8;
-                char values_type = _nanobind_buffer_type_to_letter_code(dtype_code_values, sizeof_item_values);
-
-                // call the correct template version by casting
-                if (values_type == 'B')
-                    ImPlot::PlotScatter(label_id, static_cast<const uint8_t *>(values_from_pyarray), static_cast<int>(values_count), xscale, xstart, flags, offset, values_stride);
-                else if (values_type == 'b')
-                    ImPlot::PlotScatter(label_id, static_cast<const int8_t *>(values_from_pyarray), static_cast<int>(values_count), xscale, xstart, flags, offset, values_stride);
-                else if (values_type == 'H')
-                    ImPlot::PlotScatter(label_id, static_cast<const uint16_t *>(values_from_pyarray), static_cast<int>(values_count), xscale, xstart, flags, offset, values_stride);
-                else if (values_type == 'h')
-                    ImPlot::PlotScatter(label_id, static_cast<const int16_t *>(values_from_pyarray), static_cast<int>(values_count), xscale, xstart, flags, offset, values_stride);
-                else if (values_type == 'I')
-                    ImPlot::PlotScatter(label_id, static_cast<const uint32_t *>(values_from_pyarray), static_cast<int>(values_count), xscale, xstart, flags, offset, values_stride);
-                else if (values_type == 'i')
-                    ImPlot::PlotScatter(label_id, static_cast<const int32_t *>(values_from_pyarray), static_cast<int>(values_count), xscale, xstart, flags, offset, values_stride);
-                else if (values_type == 'L')
-                    ImPlot::PlotScatter(label_id, static_cast<const np_uint_l *>(values_from_pyarray), static_cast<int>(values_count), xscale, xstart, flags, offset, values_stride);
-                else if (values_type == 'l')
-                    ImPlot::PlotScatter(label_id, static_cast<const np_int_l *>(values_from_pyarray), static_cast<int>(values_count), xscale, xstart, flags, offset, values_stride);
-                else if (values_type == 'f')
-                    ImPlot::PlotScatter(label_id, static_cast<const float *>(values_from_pyarray), static_cast<int>(values_count), xscale, xstart, flags, offset, values_stride);
-                else if (values_type == 'd')
-                    ImPlot::PlotScatter(label_id, static_cast<const double *>(values_from_pyarray), static_cast<int>(values_count), xscale, xstart, flags, offset, values_stride);
-                else if (values_type == 'g')
-                    ImPlot::PlotScatter(label_id, static_cast<const long double *>(values_from_pyarray), static_cast<int>(values_count), xscale, xstart, flags, offset, values_stride);
-                else if (values_type == 'q')
-                    ImPlot::PlotScatter(label_id, static_cast<const long long *>(values_from_pyarray), static_cast<int>(values_count), xscale, xstart, flags, offset, values_stride);
-                // If we reach this point, the array type is not supported!
-                else
-                    throw std::runtime_error(std::string("Bad array type ('") + values_type + "') for param values");
-            };
-            auto PlotScatter_adapt_exclude_params = [&PlotScatter_adapt_c_buffers](const char * label_id, const nb::ndarray<> & values, double xscale = 1, double xstart = 0, ImPlotScatterFlags flags = 0, int offset = 0)
-            {
-                PlotScatter_adapt_c_buffers(label_id, values, xscale, xstart, flags, offset, -1);
-            };
-
-            PlotScatter_adapt_exclude_params(label_id, values, xscale, xstart, flags, offset);
-        },     nb::arg("label_id"), nb::arg("values"), nb::arg("xscale") = 1, nb::arg("xstart") = 0, nb::arg("flags") = 0, nb::arg("offset") = 0);
-
-    m.def("plot_scatter",
-        [](const char * label_id, const nb::ndarray<> & xs, const nb::ndarray<> & ys, ImPlotScatterFlags flags = 0, int offset = 0)
-        {
-            auto PlotScatter_adapt_c_buffers = [](const char * label_id, const nb::ndarray<> & xs, const nb::ndarray<> & ys, ImPlotScatterFlags flags = 0, int offset = 0, int stride = -1)
-            {
-                // Check if the array is 1D and C-contiguous
-                if (! (xs.ndim() == 1 && xs.stride(0) == 1))
-                    throw std::runtime_error("The array must be 1D and contiguous");
-
-                // convert nb::ndarray to C standard buffer (const)
-                const void * xs_from_pyarray = xs.data();
-                size_t xs_count = xs.shape(0);
-
-                // Check if the array is 1D and C-contiguous
-                if (! (ys.ndim() == 1 && ys.stride(0) == 1))
-                    throw std::runtime_error("The array must be 1D and contiguous");
-
-                // convert nb::ndarray to C standard buffer (const)
-                const void * ys_from_pyarray = ys.data();
-                size_t ys_count = ys.shape(0);
-
-                // process stride default value (which was a sizeof in C++)
-                int ys_stride = stride;
-                if (ys_stride == -1)
-                    ys_stride = (int)ys.itemsize();
-
-                using np_uint_l = uint64_t;
-                using np_int_l = int64_t;
-
-                // Define a lambda to compute the letter code for the buffer type
-                auto _nanobind_buffer_type_to_letter_code = [](uint8_t dtype_code, size_t sizeof_item)  -> char
-                {
-                    #define DCODE(T) static_cast<uint8_t>(nb::dlpack::dtype_code::T)
-                        const std::array<std::tuple<uint8_t, size_t, char>, 11> mappings = {{
-                            {DCODE(UInt), 1, 'B'}, {DCODE(UInt), 2, 'H'}, {DCODE(UInt), 4, 'I'}, {DCODE(UInt), 8, 'L'},
-                            {DCODE(Int), 1, 'b'}, {DCODE(Int), 2, 'h'}, {DCODE(Int), 4, 'i'}, {DCODE(Int), 8, 'l'},
-                            {DCODE(Float), 4, 'f'}, {DCODE(Float), 8, 'd'}, {DCODE(Float), 16, 'g'}
-                        }};
-                    #undef DCODE
-                    for (const auto& [code_val, size, letter] : mappings)
-                        if (code_val == dtype_code && size == sizeof_item)
-                            return letter;
-                    throw std::runtime_error("Unsupported dtype");
-                };
-
-                // Compute the letter code for the buffer type
-                uint8_t dtype_code_ys = ys.dtype().code;
-                size_t sizeof_item_ys = ys.dtype().bits / 8;
-                char ys_type = _nanobind_buffer_type_to_letter_code(dtype_code_ys, sizeof_item_ys);
-
-                // call the correct template version by casting
-                if (ys_type == 'B')
-                    ImPlot::PlotScatter(label_id, static_cast<const uint8_t *>(xs_from_pyarray), static_cast<const uint8_t *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
-                else if (ys_type == 'b')
-                    ImPlot::PlotScatter(label_id, static_cast<const int8_t *>(xs_from_pyarray), static_cast<const int8_t *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
-                else if (ys_type == 'H')
-                    ImPlot::PlotScatter(label_id, static_cast<const uint16_t *>(xs_from_pyarray), static_cast<const uint16_t *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
-                else if (ys_type == 'h')
-                    ImPlot::PlotScatter(label_id, static_cast<const int16_t *>(xs_from_pyarray), static_cast<const int16_t *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
-                else if (ys_type == 'I')
-                    ImPlot::PlotScatter(label_id, static_cast<const uint32_t *>(xs_from_pyarray), static_cast<const uint32_t *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
-                else if (ys_type == 'i')
-                    ImPlot::PlotScatter(label_id, static_cast<const int32_t *>(xs_from_pyarray), static_cast<const int32_t *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
-                else if (ys_type == 'L')
-                    ImPlot::PlotScatter(label_id, static_cast<const np_uint_l *>(xs_from_pyarray), static_cast<const np_uint_l *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
-                else if (ys_type == 'l')
-                    ImPlot::PlotScatter(label_id, static_cast<const np_int_l *>(xs_from_pyarray), static_cast<const np_int_l *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
-                else if (ys_type == 'f')
-                    ImPlot::PlotScatter(label_id, static_cast<const float *>(xs_from_pyarray), static_cast<const float *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
-                else if (ys_type == 'd')
-                    ImPlot::PlotScatter(label_id, static_cast<const double *>(xs_from_pyarray), static_cast<const double *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
-                else if (ys_type == 'g')
-                    ImPlot::PlotScatter(label_id, static_cast<const long double *>(xs_from_pyarray), static_cast<const long double *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
-                else if (ys_type == 'q')
-                    ImPlot::PlotScatter(label_id, static_cast<const long long *>(xs_from_pyarray), static_cast<const long long *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
-                // If we reach this point, the array type is not supported!
-                else
-                    throw std::runtime_error(std::string("Bad array type ('") + ys_type + "') for param ys");
-            };
-            auto PlotScatter_adapt_exclude_params = [&PlotScatter_adapt_c_buffers](const char * label_id, const nb::ndarray<> & xs, const nb::ndarray<> & ys, ImPlotScatterFlags flags = 0, int offset = 0)
-            {
-                PlotScatter_adapt_c_buffers(label_id, xs, ys, flags, offset, -1);
-            };
-
-            PlotScatter_adapt_exclude_params(label_id, xs, ys, flags, offset);
-        },     nb::arg("label_id"), nb::arg("xs"), nb::arg("ys"), nb::arg("flags") = 0, nb::arg("offset") = 0);
-
-    m.def("plot_stairs",
-        [](const char * label_id, const nb::ndarray<> & values, double xscale = 1, double xstart = 0, ImPlotStairsFlags flags = 0, int offset = 0)
-        {
-            auto PlotStairs_adapt_c_buffers = [](const char * label_id, const nb::ndarray<> & values, double xscale = 1, double xstart = 0, ImPlotStairsFlags flags = 0, int offset = 0, int stride = -1)
-            {
-                // Check if the array is 1D and C-contiguous
-                if (! (values.ndim() == 1 && values.stride(0) == 1))
-                    throw std::runtime_error("The array must be 1D and contiguous");
-
-                // convert nb::ndarray to C standard buffer (const)
-                const void * values_from_pyarray = values.data();
-                size_t values_count = values.shape(0);
-
-                // process stride default value (which was a sizeof in C++)
-                int values_stride = stride;
-                if (values_stride == -1)
-                    values_stride = (int)values.itemsize();
-
-                using np_uint_l = uint64_t;
-                using np_int_l = int64_t;
-
-                // Define a lambda to compute the letter code for the buffer type
-                auto _nanobind_buffer_type_to_letter_code = [](uint8_t dtype_code, size_t sizeof_item)  -> char
-                {
-                    #define DCODE(T) static_cast<uint8_t>(nb::dlpack::dtype_code::T)
-                        const std::array<std::tuple<uint8_t, size_t, char>, 11> mappings = {{
-                            {DCODE(UInt), 1, 'B'}, {DCODE(UInt), 2, 'H'}, {DCODE(UInt), 4, 'I'}, {DCODE(UInt), 8, 'L'},
-                            {DCODE(Int), 1, 'b'}, {DCODE(Int), 2, 'h'}, {DCODE(Int), 4, 'i'}, {DCODE(Int), 8, 'l'},
-                            {DCODE(Float), 4, 'f'}, {DCODE(Float), 8, 'd'}, {DCODE(Float), 16, 'g'}
-                        }};
-                    #undef DCODE
-                    for (const auto& [code_val, size, letter] : mappings)
-                        if (code_val == dtype_code && size == sizeof_item)
-                            return letter;
-                    throw std::runtime_error("Unsupported dtype");
-                };
-
-                // Compute the letter code for the buffer type
-                uint8_t dtype_code_values = values.dtype().code;
-                size_t sizeof_item_values = values.dtype().bits / 8;
-                char values_type = _nanobind_buffer_type_to_letter_code(dtype_code_values, sizeof_item_values);
-
-                // call the correct template version by casting
-                if (values_type == 'B')
-                    ImPlot::PlotStairs(label_id, static_cast<const uint8_t *>(values_from_pyarray), static_cast<int>(values_count), xscale, xstart, flags, offset, values_stride);
-                else if (values_type == 'b')
-                    ImPlot::PlotStairs(label_id, static_cast<const int8_t *>(values_from_pyarray), static_cast<int>(values_count), xscale, xstart, flags, offset, values_stride);
-                else if (values_type == 'H')
-                    ImPlot::PlotStairs(label_id, static_cast<const uint16_t *>(values_from_pyarray), static_cast<int>(values_count), xscale, xstart, flags, offset, values_stride);
-                else if (values_type == 'h')
-                    ImPlot::PlotStairs(label_id, static_cast<const int16_t *>(values_from_pyarray), static_cast<int>(values_count), xscale, xstart, flags, offset, values_stride);
-                else if (values_type == 'I')
-                    ImPlot::PlotStairs(label_id, static_cast<const uint32_t *>(values_from_pyarray), static_cast<int>(values_count), xscale, xstart, flags, offset, values_stride);
-                else if (values_type == 'i')
-                    ImPlot::PlotStairs(label_id, static_cast<const int32_t *>(values_from_pyarray), static_cast<int>(values_count), xscale, xstart, flags, offset, values_stride);
-                else if (values_type == 'L')
-                    ImPlot::PlotStairs(label_id, static_cast<const np_uint_l *>(values_from_pyarray), static_cast<int>(values_count), xscale, xstart, flags, offset, values_stride);
-                else if (values_type == 'l')
-                    ImPlot::PlotStairs(label_id, static_cast<const np_int_l *>(values_from_pyarray), static_cast<int>(values_count), xscale, xstart, flags, offset, values_stride);
-                else if (values_type == 'f')
-                    ImPlot::PlotStairs(label_id, static_cast<const float *>(values_from_pyarray), static_cast<int>(values_count), xscale, xstart, flags, offset, values_stride);
-                else if (values_type == 'd')
-                    ImPlot::PlotStairs(label_id, static_cast<const double *>(values_from_pyarray), static_cast<int>(values_count), xscale, xstart, flags, offset, values_stride);
-                else if (values_type == 'g')
-                    ImPlot::PlotStairs(label_id, static_cast<const long double *>(values_from_pyarray), static_cast<int>(values_count), xscale, xstart, flags, offset, values_stride);
-                else if (values_type == 'q')
-                    ImPlot::PlotStairs(label_id, static_cast<const long long *>(values_from_pyarray), static_cast<int>(values_count), xscale, xstart, flags, offset, values_stride);
-                // If we reach this point, the array type is not supported!
-                else
-                    throw std::runtime_error(std::string("Bad array type ('") + values_type + "') for param values");
-            };
-            auto PlotStairs_adapt_exclude_params = [&PlotStairs_adapt_c_buffers](const char * label_id, const nb::ndarray<> & values, double xscale = 1, double xstart = 0, ImPlotStairsFlags flags = 0, int offset = 0)
-            {
-                PlotStairs_adapt_c_buffers(label_id, values, xscale, xstart, flags, offset, -1);
-            };
-
-            PlotStairs_adapt_exclude_params(label_id, values, xscale, xstart, flags, offset);
-        },     nb::arg("label_id"), nb::arg("values"), nb::arg("xscale") = 1, nb::arg("xstart") = 0, nb::arg("flags") = 0, nb::arg("offset") = 0);
-
-    m.def("plot_stairs",
-        [](const char * label_id, const nb::ndarray<> & xs, const nb::ndarray<> & ys, ImPlotStairsFlags flags = 0, int offset = 0)
-        {
-            auto PlotStairs_adapt_c_buffers = [](const char * label_id, const nb::ndarray<> & xs, const nb::ndarray<> & ys, ImPlotStairsFlags flags = 0, int offset = 0, int stride = -1)
-            {
-                // Check if the array is 1D and C-contiguous
-                if (! (xs.ndim() == 1 && xs.stride(0) == 1))
-                    throw std::runtime_error("The array must be 1D and contiguous");
-
-                // convert nb::ndarray to C standard buffer (const)
-                const void * xs_from_pyarray = xs.data();
-                size_t xs_count = xs.shape(0);
-
-                // Check if the array is 1D and C-contiguous
-                if (! (ys.ndim() == 1 && ys.stride(0) == 1))
-                    throw std::runtime_error("The array must be 1D and contiguous");
-
-                // convert nb::ndarray to C standard buffer (const)
-                const void * ys_from_pyarray = ys.data();
-                size_t ys_count = ys.shape(0);
-
-                // process stride default value (which was a sizeof in C++)
-                int ys_stride = stride;
-                if (ys_stride == -1)
-                    ys_stride = (int)ys.itemsize();
-
-                using np_uint_l = uint64_t;
-                using np_int_l = int64_t;
-
-                // Define a lambda to compute the letter code for the buffer type
-                auto _nanobind_buffer_type_to_letter_code = [](uint8_t dtype_code, size_t sizeof_item)  -> char
-                {
-                    #define DCODE(T) static_cast<uint8_t>(nb::dlpack::dtype_code::T)
-                        const std::array<std::tuple<uint8_t, size_t, char>, 11> mappings = {{
-                            {DCODE(UInt), 1, 'B'}, {DCODE(UInt), 2, 'H'}, {DCODE(UInt), 4, 'I'}, {DCODE(UInt), 8, 'L'},
-                            {DCODE(Int), 1, 'b'}, {DCODE(Int), 2, 'h'}, {DCODE(Int), 4, 'i'}, {DCODE(Int), 8, 'l'},
-                            {DCODE(Float), 4, 'f'}, {DCODE(Float), 8, 'd'}, {DCODE(Float), 16, 'g'}
-                        }};
-                    #undef DCODE
-                    for (const auto& [code_val, size, letter] : mappings)
-                        if (code_val == dtype_code && size == sizeof_item)
-                            return letter;
-                    throw std::runtime_error("Unsupported dtype");
-                };
-
-                // Compute the letter code for the buffer type
-                uint8_t dtype_code_ys = ys.dtype().code;
-                size_t sizeof_item_ys = ys.dtype().bits / 8;
-                char ys_type = _nanobind_buffer_type_to_letter_code(dtype_code_ys, sizeof_item_ys);
-
-                // call the correct template version by casting
-                if (ys_type == 'B')
-                    ImPlot::PlotStairs(label_id, static_cast<const uint8_t *>(xs_from_pyarray), static_cast<const uint8_t *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
-                else if (ys_type == 'b')
-                    ImPlot::PlotStairs(label_id, static_cast<const int8_t *>(xs_from_pyarray), static_cast<const int8_t *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
-                else if (ys_type == 'H')
-                    ImPlot::PlotStairs(label_id, static_cast<const uint16_t *>(xs_from_pyarray), static_cast<const uint16_t *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
-                else if (ys_type == 'h')
-                    ImPlot::PlotStairs(label_id, static_cast<const int16_t *>(xs_from_pyarray), static_cast<const int16_t *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
-                else if (ys_type == 'I')
-                    ImPlot::PlotStairs(label_id, static_cast<const uint32_t *>(xs_from_pyarray), static_cast<const uint32_t *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
-                else if (ys_type == 'i')
-                    ImPlot::PlotStairs(label_id, static_cast<const int32_t *>(xs_from_pyarray), static_cast<const int32_t *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
-                else if (ys_type == 'L')
-                    ImPlot::PlotStairs(label_id, static_cast<const np_uint_l *>(xs_from_pyarray), static_cast<const np_uint_l *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
-                else if (ys_type == 'l')
-                    ImPlot::PlotStairs(label_id, static_cast<const np_int_l *>(xs_from_pyarray), static_cast<const np_int_l *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
-                else if (ys_type == 'f')
-                    ImPlot::PlotStairs(label_id, static_cast<const float *>(xs_from_pyarray), static_cast<const float *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
-                else if (ys_type == 'd')
-                    ImPlot::PlotStairs(label_id, static_cast<const double *>(xs_from_pyarray), static_cast<const double *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
-                else if (ys_type == 'g')
-                    ImPlot::PlotStairs(label_id, static_cast<const long double *>(xs_from_pyarray), static_cast<const long double *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
-                else if (ys_type == 'q')
-                    ImPlot::PlotStairs(label_id, static_cast<const long long *>(xs_from_pyarray), static_cast<const long long *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
-                // If we reach this point, the array type is not supported!
-                else
-                    throw std::runtime_error(std::string("Bad array type ('") + ys_type + "') for param ys");
-            };
-            auto PlotStairs_adapt_exclude_params = [&PlotStairs_adapt_c_buffers](const char * label_id, const nb::ndarray<> & xs, const nb::ndarray<> & ys, ImPlotStairsFlags flags = 0, int offset = 0)
-            {
-                PlotStairs_adapt_c_buffers(label_id, xs, ys, flags, offset, -1);
-            };
-
-            PlotStairs_adapt_exclude_params(label_id, xs, ys, flags, offset);
-        },     nb::arg("label_id"), nb::arg("xs"), nb::arg("ys"), nb::arg("flags") = 0, nb::arg("offset") = 0);
-
-    m.def("plot_shaded",
-        [](const char * label_id, const nb::ndarray<> & values, double yref = 0, double xscale = 1, double xstart = 0, ImPlotShadedFlags flags = 0, int offset = 0)
-        {
-            auto PlotShaded_adapt_c_buffers = [](const char * label_id, const nb::ndarray<> & values, double yref = 0, double xscale = 1, double xstart = 0, ImPlotShadedFlags flags = 0, int offset = 0, int stride = -1)
-            {
-                // Check if the array is 1D and C-contiguous
-                if (! (values.ndim() == 1 && values.stride(0) == 1))
-                    throw std::runtime_error("The array must be 1D and contiguous");
-
-                // convert nb::ndarray to C standard buffer (const)
-                const void * values_from_pyarray = values.data();
-                size_t values_count = values.shape(0);
-
-                // process stride default value (which was a sizeof in C++)
-                int values_stride = stride;
-                if (values_stride == -1)
-                    values_stride = (int)values.itemsize();
-
-                using np_uint_l = uint64_t;
-                using np_int_l = int64_t;
-
-                // Define a lambda to compute the letter code for the buffer type
-                auto _nanobind_buffer_type_to_letter_code = [](uint8_t dtype_code, size_t sizeof_item)  -> char
-                {
-                    #define DCODE(T) static_cast<uint8_t>(nb::dlpack::dtype_code::T)
-                        const std::array<std::tuple<uint8_t, size_t, char>, 11> mappings = {{
-                            {DCODE(UInt), 1, 'B'}, {DCODE(UInt), 2, 'H'}, {DCODE(UInt), 4, 'I'}, {DCODE(UInt), 8, 'L'},
-                            {DCODE(Int), 1, 'b'}, {DCODE(Int), 2, 'h'}, {DCODE(Int), 4, 'i'}, {DCODE(Int), 8, 'l'},
-                            {DCODE(Float), 4, 'f'}, {DCODE(Float), 8, 'd'}, {DCODE(Float), 16, 'g'}
-                        }};
-                    #undef DCODE
-                    for (const auto& [code_val, size, letter] : mappings)
-                        if (code_val == dtype_code && size == sizeof_item)
-                            return letter;
-                    throw std::runtime_error("Unsupported dtype");
-                };
-
-                // Compute the letter code for the buffer type
-                uint8_t dtype_code_values = values.dtype().code;
-                size_t sizeof_item_values = values.dtype().bits / 8;
-                char values_type = _nanobind_buffer_type_to_letter_code(dtype_code_values, sizeof_item_values);
-
-                // call the correct template version by casting
-                if (values_type == 'B')
-                    ImPlot::PlotShaded(label_id, static_cast<const uint8_t *>(values_from_pyarray), static_cast<int>(values_count), yref, xscale, xstart, flags, offset, values_stride);
-                else if (values_type == 'b')
-                    ImPlot::PlotShaded(label_id, static_cast<const int8_t *>(values_from_pyarray), static_cast<int>(values_count), yref, xscale, xstart, flags, offset, values_stride);
-                else if (values_type == 'H')
-                    ImPlot::PlotShaded(label_id, static_cast<const uint16_t *>(values_from_pyarray), static_cast<int>(values_count), yref, xscale, xstart, flags, offset, values_stride);
-                else if (values_type == 'h')
-                    ImPlot::PlotShaded(label_id, static_cast<const int16_t *>(values_from_pyarray), static_cast<int>(values_count), yref, xscale, xstart, flags, offset, values_stride);
-                else if (values_type == 'I')
-                    ImPlot::PlotShaded(label_id, static_cast<const uint32_t *>(values_from_pyarray), static_cast<int>(values_count), yref, xscale, xstart, flags, offset, values_stride);
-                else if (values_type == 'i')
-                    ImPlot::PlotShaded(label_id, static_cast<const int32_t *>(values_from_pyarray), static_cast<int>(values_count), yref, xscale, xstart, flags, offset, values_stride);
-                else if (values_type == 'L')
-                    ImPlot::PlotShaded(label_id, static_cast<const np_uint_l *>(values_from_pyarray), static_cast<int>(values_count), yref, xscale, xstart, flags, offset, values_stride);
-                else if (values_type == 'l')
-                    ImPlot::PlotShaded(label_id, static_cast<const np_int_l *>(values_from_pyarray), static_cast<int>(values_count), yref, xscale, xstart, flags, offset, values_stride);
-                else if (values_type == 'f')
-                    ImPlot::PlotShaded(label_id, static_cast<const float *>(values_from_pyarray), static_cast<int>(values_count), yref, xscale, xstart, flags, offset, values_stride);
-                else if (values_type == 'd')
-                    ImPlot::PlotShaded(label_id, static_cast<const double *>(values_from_pyarray), static_cast<int>(values_count), yref, xscale, xstart, flags, offset, values_stride);
-                else if (values_type == 'g')
-                    ImPlot::PlotShaded(label_id, static_cast<const long double *>(values_from_pyarray), static_cast<int>(values_count), yref, xscale, xstart, flags, offset, values_stride);
-                else if (values_type == 'q')
-                    ImPlot::PlotShaded(label_id, static_cast<const long long *>(values_from_pyarray), static_cast<int>(values_count), yref, xscale, xstart, flags, offset, values_stride);
-                // If we reach this point, the array type is not supported!
-                else
-                    throw std::runtime_error(std::string("Bad array type ('") + values_type + "') for param values");
-            };
-            auto PlotShaded_adapt_exclude_params = [&PlotShaded_adapt_c_buffers](const char * label_id, const nb::ndarray<> & values, double yref = 0, double xscale = 1, double xstart = 0, ImPlotShadedFlags flags = 0, int offset = 0)
-            {
-                PlotShaded_adapt_c_buffers(label_id, values, yref, xscale, xstart, flags, offset, -1);
-            };
-
-            PlotShaded_adapt_exclude_params(label_id, values, yref, xscale, xstart, flags, offset);
-        },     nb::arg("label_id"), nb::arg("values"), nb::arg("yref") = 0, nb::arg("xscale") = 1, nb::arg("xstart") = 0, nb::arg("flags") = 0, nb::arg("offset") = 0);
-
-    m.def("plot_shaded",
-        [](const char * label_id, const nb::ndarray<> & xs, const nb::ndarray<> & ys, double yref = 0, ImPlotShadedFlags flags = 0, int offset = 0)
-        {
-            auto PlotShaded_adapt_c_buffers = [](const char * label_id, const nb::ndarray<> & xs, const nb::ndarray<> & ys, double yref = 0, ImPlotShadedFlags flags = 0, int offset = 0, int stride = -1)
-            {
-                // Check if the array is 1D and C-contiguous
-                if (! (xs.ndim() == 1 && xs.stride(0) == 1))
-                    throw std::runtime_error("The array must be 1D and contiguous");
-
-                // convert nb::ndarray to C standard buffer (const)
-                const void * xs_from_pyarray = xs.data();
-                size_t xs_count = xs.shape(0);
-
-                // Check if the array is 1D and C-contiguous
-                if (! (ys.ndim() == 1 && ys.stride(0) == 1))
-                    throw std::runtime_error("The array must be 1D and contiguous");
-
-                // convert nb::ndarray to C standard buffer (const)
-                const void * ys_from_pyarray = ys.data();
-                size_t ys_count = ys.shape(0);
-
-                // process stride default value (which was a sizeof in C++)
-                int ys_stride = stride;
-                if (ys_stride == -1)
-                    ys_stride = (int)ys.itemsize();
-
-                using np_uint_l = uint64_t;
-                using np_int_l = int64_t;
-
-                // Define a lambda to compute the letter code for the buffer type
-                auto _nanobind_buffer_type_to_letter_code = [](uint8_t dtype_code, size_t sizeof_item)  -> char
-                {
-                    #define DCODE(T) static_cast<uint8_t>(nb::dlpack::dtype_code::T)
-                        const std::array<std::tuple<uint8_t, size_t, char>, 11> mappings = {{
-                            {DCODE(UInt), 1, 'B'}, {DCODE(UInt), 2, 'H'}, {DCODE(UInt), 4, 'I'}, {DCODE(UInt), 8, 'L'},
-                            {DCODE(Int), 1, 'b'}, {DCODE(Int), 2, 'h'}, {DCODE(Int), 4, 'i'}, {DCODE(Int), 8, 'l'},
-                            {DCODE(Float), 4, 'f'}, {DCODE(Float), 8, 'd'}, {DCODE(Float), 16, 'g'}
-                        }};
-                    #undef DCODE
-                    for (const auto& [code_val, size, letter] : mappings)
-                        if (code_val == dtype_code && size == sizeof_item)
-                            return letter;
-                    throw std::runtime_error("Unsupported dtype");
-                };
-
-                // Compute the letter code for the buffer type
-                uint8_t dtype_code_ys = ys.dtype().code;
-                size_t sizeof_item_ys = ys.dtype().bits / 8;
-                char ys_type = _nanobind_buffer_type_to_letter_code(dtype_code_ys, sizeof_item_ys);
-
-                // call the correct template version by casting
-                if (ys_type == 'B')
-                    ImPlot::PlotShaded(label_id, static_cast<const uint8_t *>(xs_from_pyarray), static_cast<const uint8_t *>(ys_from_pyarray), static_cast<int>(ys_count), yref, flags, offset, ys_stride);
-                else if (ys_type == 'b')
-                    ImPlot::PlotShaded(label_id, static_cast<const int8_t *>(xs_from_pyarray), static_cast<const int8_t *>(ys_from_pyarray), static_cast<int>(ys_count), yref, flags, offset, ys_stride);
-                else if (ys_type == 'H')
-                    ImPlot::PlotShaded(label_id, static_cast<const uint16_t *>(xs_from_pyarray), static_cast<const uint16_t *>(ys_from_pyarray), static_cast<int>(ys_count), yref, flags, offset, ys_stride);
-                else if (ys_type == 'h')
-                    ImPlot::PlotShaded(label_id, static_cast<const int16_t *>(xs_from_pyarray), static_cast<const int16_t *>(ys_from_pyarray), static_cast<int>(ys_count), yref, flags, offset, ys_stride);
-                else if (ys_type == 'I')
-                    ImPlot::PlotShaded(label_id, static_cast<const uint32_t *>(xs_from_pyarray), static_cast<const uint32_t *>(ys_from_pyarray), static_cast<int>(ys_count), yref, flags, offset, ys_stride);
-                else if (ys_type == 'i')
-                    ImPlot::PlotShaded(label_id, static_cast<const int32_t *>(xs_from_pyarray), static_cast<const int32_t *>(ys_from_pyarray), static_cast<int>(ys_count), yref, flags, offset, ys_stride);
-                else if (ys_type == 'L')
-                    ImPlot::PlotShaded(label_id, static_cast<const np_uint_l *>(xs_from_pyarray), static_cast<const np_uint_l *>(ys_from_pyarray), static_cast<int>(ys_count), yref, flags, offset, ys_stride);
-                else if (ys_type == 'l')
-                    ImPlot::PlotShaded(label_id, static_cast<const np_int_l *>(xs_from_pyarray), static_cast<const np_int_l *>(ys_from_pyarray), static_cast<int>(ys_count), yref, flags, offset, ys_stride);
-                else if (ys_type == 'f')
-                    ImPlot::PlotShaded(label_id, static_cast<const float *>(xs_from_pyarray), static_cast<const float *>(ys_from_pyarray), static_cast<int>(ys_count), yref, flags, offset, ys_stride);
-                else if (ys_type == 'd')
-                    ImPlot::PlotShaded(label_id, static_cast<const double *>(xs_from_pyarray), static_cast<const double *>(ys_from_pyarray), static_cast<int>(ys_count), yref, flags, offset, ys_stride);
-                else if (ys_type == 'g')
-                    ImPlot::PlotShaded(label_id, static_cast<const long double *>(xs_from_pyarray), static_cast<const long double *>(ys_from_pyarray), static_cast<int>(ys_count), yref, flags, offset, ys_stride);
-                else if (ys_type == 'q')
-                    ImPlot::PlotShaded(label_id, static_cast<const long long *>(xs_from_pyarray), static_cast<const long long *>(ys_from_pyarray), static_cast<int>(ys_count), yref, flags, offset, ys_stride);
-                // If we reach this point, the array type is not supported!
-                else
-                    throw std::runtime_error(std::string("Bad array type ('") + ys_type + "') for param ys");
-            };
-            auto PlotShaded_adapt_exclude_params = [&PlotShaded_adapt_c_buffers](const char * label_id, const nb::ndarray<> & xs, const nb::ndarray<> & ys, double yref = 0, ImPlotShadedFlags flags = 0, int offset = 0)
-            {
-                PlotShaded_adapt_c_buffers(label_id, xs, ys, yref, flags, offset, -1);
-            };
-
-            PlotShaded_adapt_exclude_params(label_id, xs, ys, yref, flags, offset);
-        },     nb::arg("label_id"), nb::arg("xs"), nb::arg("ys"), nb::arg("yref") = 0, nb::arg("flags") = 0, nb::arg("offset") = 0);
-
-    m.def("plot_shaded",
-        [](const char * label_id, const nb::ndarray<> & xs, const nb::ndarray<> & ys1, const nb::ndarray<> & ys2, ImPlotShadedFlags flags = 0, int offset = 0)
-        {
-            auto PlotShaded_adapt_c_buffers = [](const char * label_id, const nb::ndarray<> & xs, const nb::ndarray<> & ys1, const nb::ndarray<> & ys2, ImPlotShadedFlags flags = 0, int offset = 0, int stride = -1)
-            {
-                // Check if the array is 1D and C-contiguous
-                if (! (xs.ndim() == 1 && xs.stride(0) == 1))
-                    throw std::runtime_error("The array must be 1D and contiguous");
-
-                // convert nb::ndarray to C standard buffer (const)
-                const void * xs_from_pyarray = xs.data();
-                size_t xs_count = xs.shape(0);
-
-                // Check if the array is 1D and C-contiguous
-                if (! (ys1.ndim() == 1 && ys1.stride(0) == 1))
-                    throw std::runtime_error("The array must be 1D and contiguous");
-
-                // convert nb::ndarray to C standard buffer (const)
-                const void * ys1_from_pyarray = ys1.data();
-                size_t ys1_count = ys1.shape(0);
-
-                // Check if the array is 1D and C-contiguous
-                if (! (ys2.ndim() == 1 && ys2.stride(0) == 1))
-                    throw std::runtime_error("The array must be 1D and contiguous");
-
-                // convert nb::ndarray to C standard buffer (const)
-                const void * ys2_from_pyarray = ys2.data();
-                size_t ys2_count = ys2.shape(0);
-
-                // process stride default value (which was a sizeof in C++)
-                int ys2_stride = stride;
-                if (ys2_stride == -1)
-                    ys2_stride = (int)ys2.itemsize();
-
-                using np_uint_l = uint64_t;
-                using np_int_l = int64_t;
-
-                // Define a lambda to compute the letter code for the buffer type
-                auto _nanobind_buffer_type_to_letter_code = [](uint8_t dtype_code, size_t sizeof_item)  -> char
-                {
-                    #define DCODE(T) static_cast<uint8_t>(nb::dlpack::dtype_code::T)
-                        const std::array<std::tuple<uint8_t, size_t, char>, 11> mappings = {{
-                            {DCODE(UInt), 1, 'B'}, {DCODE(UInt), 2, 'H'}, {DCODE(UInt), 4, 'I'}, {DCODE(UInt), 8, 'L'},
-                            {DCODE(Int), 1, 'b'}, {DCODE(Int), 2, 'h'}, {DCODE(Int), 4, 'i'}, {DCODE(Int), 8, 'l'},
-                            {DCODE(Float), 4, 'f'}, {DCODE(Float), 8, 'd'}, {DCODE(Float), 16, 'g'}
-                        }};
-                    #undef DCODE
-                    for (const auto& [code_val, size, letter] : mappings)
-                        if (code_val == dtype_code && size == sizeof_item)
-                            return letter;
-                    throw std::runtime_error("Unsupported dtype");
-                };
-
-                // Compute the letter code for the buffer type
-                uint8_t dtype_code_ys2 = ys2.dtype().code;
-                size_t sizeof_item_ys2 = ys2.dtype().bits / 8;
-                char ys2_type = _nanobind_buffer_type_to_letter_code(dtype_code_ys2, sizeof_item_ys2);
-
-                // call the correct template version by casting
-                if (ys2_type == 'B')
-                    ImPlot::PlotShaded(label_id, static_cast<const uint8_t *>(xs_from_pyarray), static_cast<const uint8_t *>(ys1_from_pyarray), static_cast<const uint8_t *>(ys2_from_pyarray), static_cast<int>(ys2_count), flags, offset, ys2_stride);
-                else if (ys2_type == 'b')
-                    ImPlot::PlotShaded(label_id, static_cast<const int8_t *>(xs_from_pyarray), static_cast<const int8_t *>(ys1_from_pyarray), static_cast<const int8_t *>(ys2_from_pyarray), static_cast<int>(ys2_count), flags, offset, ys2_stride);
-                else if (ys2_type == 'H')
-                    ImPlot::PlotShaded(label_id, static_cast<const uint16_t *>(xs_from_pyarray), static_cast<const uint16_t *>(ys1_from_pyarray), static_cast<const uint16_t *>(ys2_from_pyarray), static_cast<int>(ys2_count), flags, offset, ys2_stride);
-                else if (ys2_type == 'h')
-                    ImPlot::PlotShaded(label_id, static_cast<const int16_t *>(xs_from_pyarray), static_cast<const int16_t *>(ys1_from_pyarray), static_cast<const int16_t *>(ys2_from_pyarray), static_cast<int>(ys2_count), flags, offset, ys2_stride);
-                else if (ys2_type == 'I')
-                    ImPlot::PlotShaded(label_id, static_cast<const uint32_t *>(xs_from_pyarray), static_cast<const uint32_t *>(ys1_from_pyarray), static_cast<const uint32_t *>(ys2_from_pyarray), static_cast<int>(ys2_count), flags, offset, ys2_stride);
-                else if (ys2_type == 'i')
-                    ImPlot::PlotShaded(label_id, static_cast<const int32_t *>(xs_from_pyarray), static_cast<const int32_t *>(ys1_from_pyarray), static_cast<const int32_t *>(ys2_from_pyarray), static_cast<int>(ys2_count), flags, offset, ys2_stride);
-                else if (ys2_type == 'L')
-                    ImPlot::PlotShaded(label_id, static_cast<const np_uint_l *>(xs_from_pyarray), static_cast<const np_uint_l *>(ys1_from_pyarray), static_cast<const np_uint_l *>(ys2_from_pyarray), static_cast<int>(ys2_count), flags, offset, ys2_stride);
-                else if (ys2_type == 'l')
-                    ImPlot::PlotShaded(label_id, static_cast<const np_int_l *>(xs_from_pyarray), static_cast<const np_int_l *>(ys1_from_pyarray), static_cast<const np_int_l *>(ys2_from_pyarray), static_cast<int>(ys2_count), flags, offset, ys2_stride);
-                else if (ys2_type == 'f')
-                    ImPlot::PlotShaded(label_id, static_cast<const float *>(xs_from_pyarray), static_cast<const float *>(ys1_from_pyarray), static_cast<const float *>(ys2_from_pyarray), static_cast<int>(ys2_count), flags, offset, ys2_stride);
-                else if (ys2_type == 'd')
-                    ImPlot::PlotShaded(label_id, static_cast<const double *>(xs_from_pyarray), static_cast<const double *>(ys1_from_pyarray), static_cast<const double *>(ys2_from_pyarray), static_cast<int>(ys2_count), flags, offset, ys2_stride);
-                else if (ys2_type == 'g')
-                    ImPlot::PlotShaded(label_id, static_cast<const long double *>(xs_from_pyarray), static_cast<const long double *>(ys1_from_pyarray), static_cast<const long double *>(ys2_from_pyarray), static_cast<int>(ys2_count), flags, offset, ys2_stride);
-                else if (ys2_type == 'q')
-                    ImPlot::PlotShaded(label_id, static_cast<const long long *>(xs_from_pyarray), static_cast<const long long *>(ys1_from_pyarray), static_cast<const long long *>(ys2_from_pyarray), static_cast<int>(ys2_count), flags, offset, ys2_stride);
-                // If we reach this point, the array type is not supported!
-                else
-                    throw std::runtime_error(std::string("Bad array type ('") + ys2_type + "') for param ys2");
-            };
-            auto PlotShaded_adapt_exclude_params = [&PlotShaded_adapt_c_buffers](const char * label_id, const nb::ndarray<> & xs, const nb::ndarray<> & ys1, const nb::ndarray<> & ys2, ImPlotShadedFlags flags = 0, int offset = 0)
-            {
-                PlotShaded_adapt_c_buffers(label_id, xs, ys1, ys2, flags, offset, -1);
-            };
-
-            PlotShaded_adapt_exclude_params(label_id, xs, ys1, ys2, flags, offset);
-        },     nb::arg("label_id"), nb::arg("xs"), nb::arg("ys1"), nb::arg("ys2"), nb::arg("flags") = 0, nb::arg("offset") = 0);
-
-    m.def("plot_bars",
-        [](const char * label_id, const nb::ndarray<> & values, double bar_size = 0.67, double shift = 0, ImPlotBarsFlags flags = 0, int offset = 0)
-        {
-            auto PlotBars_adapt_c_buffers = [](const char * label_id, const nb::ndarray<> & values, double bar_size = 0.67, double shift = 0, ImPlotBarsFlags flags = 0, int offset = 0, int stride = -1)
-            {
-                // Check if the array is 1D and C-contiguous
-                if (! (values.ndim() == 1 && values.stride(0) == 1))
-                    throw std::runtime_error("The array must be 1D and contiguous");
-
-                // convert nb::ndarray to C standard buffer (const)
-                const void * values_from_pyarray = values.data();
-                size_t values_count = values.shape(0);
-
-                // process stride default value (which was a sizeof in C++)
-                int values_stride = stride;
-                if (values_stride == -1)
-                    values_stride = (int)values.itemsize();
-
-                using np_uint_l = uint64_t;
-                using np_int_l = int64_t;
-
-                // Define a lambda to compute the letter code for the buffer type
-                auto _nanobind_buffer_type_to_letter_code = [](uint8_t dtype_code, size_t sizeof_item)  -> char
-                {
-                    #define DCODE(T) static_cast<uint8_t>(nb::dlpack::dtype_code::T)
-                        const std::array<std::tuple<uint8_t, size_t, char>, 11> mappings = {{
-                            {DCODE(UInt), 1, 'B'}, {DCODE(UInt), 2, 'H'}, {DCODE(UInt), 4, 'I'}, {DCODE(UInt), 8, 'L'},
-                            {DCODE(Int), 1, 'b'}, {DCODE(Int), 2, 'h'}, {DCODE(Int), 4, 'i'}, {DCODE(Int), 8, 'l'},
-                            {DCODE(Float), 4, 'f'}, {DCODE(Float), 8, 'd'}, {DCODE(Float), 16, 'g'}
-                        }};
-                    #undef DCODE
-                    for (const auto& [code_val, size, letter] : mappings)
-                        if (code_val == dtype_code && size == sizeof_item)
-                            return letter;
-                    throw std::runtime_error("Unsupported dtype");
-                };
-
-                // Compute the letter code for the buffer type
-                uint8_t dtype_code_values = values.dtype().code;
-                size_t sizeof_item_values = values.dtype().bits / 8;
-                char values_type = _nanobind_buffer_type_to_letter_code(dtype_code_values, sizeof_item_values);
-
-                // call the correct template version by casting
-                if (values_type == 'B')
-                    ImPlot::PlotBars(label_id, static_cast<const uint8_t *>(values_from_pyarray), static_cast<int>(values_count), bar_size, shift, flags, offset, values_stride);
-                else if (values_type == 'b')
-                    ImPlot::PlotBars(label_id, static_cast<const int8_t *>(values_from_pyarray), static_cast<int>(values_count), bar_size, shift, flags, offset, values_stride);
-                else if (values_type == 'H')
-                    ImPlot::PlotBars(label_id, static_cast<const uint16_t *>(values_from_pyarray), static_cast<int>(values_count), bar_size, shift, flags, offset, values_stride);
-                else if (values_type == 'h')
-                    ImPlot::PlotBars(label_id, static_cast<const int16_t *>(values_from_pyarray), static_cast<int>(values_count), bar_size, shift, flags, offset, values_stride);
-                else if (values_type == 'I')
-                    ImPlot::PlotBars(label_id, static_cast<const uint32_t *>(values_from_pyarray), static_cast<int>(values_count), bar_size, shift, flags, offset, values_stride);
-                else if (values_type == 'i')
-                    ImPlot::PlotBars(label_id, static_cast<const int32_t *>(values_from_pyarray), static_cast<int>(values_count), bar_size, shift, flags, offset, values_stride);
-                else if (values_type == 'L')
-                    ImPlot::PlotBars(label_id, static_cast<const np_uint_l *>(values_from_pyarray), static_cast<int>(values_count), bar_size, shift, flags, offset, values_stride);
-                else if (values_type == 'l')
-                    ImPlot::PlotBars(label_id, static_cast<const np_int_l *>(values_from_pyarray), static_cast<int>(values_count), bar_size, shift, flags, offset, values_stride);
-                else if (values_type == 'f')
-                    ImPlot::PlotBars(label_id, static_cast<const float *>(values_from_pyarray), static_cast<int>(values_count), bar_size, shift, flags, offset, values_stride);
-                else if (values_type == 'd')
-                    ImPlot::PlotBars(label_id, static_cast<const double *>(values_from_pyarray), static_cast<int>(values_count), bar_size, shift, flags, offset, values_stride);
-                else if (values_type == 'g')
-                    ImPlot::PlotBars(label_id, static_cast<const long double *>(values_from_pyarray), static_cast<int>(values_count), bar_size, shift, flags, offset, values_stride);
-                else if (values_type == 'q')
-                    ImPlot::PlotBars(label_id, static_cast<const long long *>(values_from_pyarray), static_cast<int>(values_count), bar_size, shift, flags, offset, values_stride);
-                // If we reach this point, the array type is not supported!
-                else
-                    throw std::runtime_error(std::string("Bad array type ('") + values_type + "') for param values");
-            };
-            auto PlotBars_adapt_exclude_params = [&PlotBars_adapt_c_buffers](const char * label_id, const nb::ndarray<> & values, double bar_size = 0.67, double shift = 0, ImPlotBarsFlags flags = 0, int offset = 0)
-            {
-                PlotBars_adapt_c_buffers(label_id, values, bar_size, shift, flags, offset, -1);
-            };
-
-            PlotBars_adapt_exclude_params(label_id, values, bar_size, shift, flags, offset);
-        },     nb::arg("label_id"), nb::arg("values"), nb::arg("bar_size") = 0.67, nb::arg("shift") = 0, nb::arg("flags") = 0, nb::arg("offset") = 0);
-
-    m.def("plot_bars",
-        [](const char * label_id, const nb::ndarray<> & xs, const nb::ndarray<> & ys, double bar_size, ImPlotBarsFlags flags = 0, int offset = 0)
-        {
-            auto PlotBars_adapt_c_buffers = [](const char * label_id, const nb::ndarray<> & xs, const nb::ndarray<> & ys, double bar_size, ImPlotBarsFlags flags = 0, int offset = 0, int stride = -1)
-            {
-                // Check if the array is 1D and C-contiguous
-                if (! (xs.ndim() == 1 && xs.stride(0) == 1))
-                    throw std::runtime_error("The array must be 1D and contiguous");
-
-                // convert nb::ndarray to C standard buffer (const)
-                const void * xs_from_pyarray = xs.data();
-                size_t xs_count = xs.shape(0);
-
-                // Check if the array is 1D and C-contiguous
-                if (! (ys.ndim() == 1 && ys.stride(0) == 1))
-                    throw std::runtime_error("The array must be 1D and contiguous");
-
-                // convert nb::ndarray to C standard buffer (const)
-                const void * ys_from_pyarray = ys.data();
-                size_t ys_count = ys.shape(0);
-
-                // process stride default value (which was a sizeof in C++)
-                int ys_stride = stride;
-                if (ys_stride == -1)
-                    ys_stride = (int)ys.itemsize();
-
-                using np_uint_l = uint64_t;
-                using np_int_l = int64_t;
-
-                // Define a lambda to compute the letter code for the buffer type
-                auto _nanobind_buffer_type_to_letter_code = [](uint8_t dtype_code, size_t sizeof_item)  -> char
-                {
-                    #define DCODE(T) static_cast<uint8_t>(nb::dlpack::dtype_code::T)
-                        const std::array<std::tuple<uint8_t, size_t, char>, 11> mappings = {{
-                            {DCODE(UInt), 1, 'B'}, {DCODE(UInt), 2, 'H'}, {DCODE(UInt), 4, 'I'}, {DCODE(UInt), 8, 'L'},
-                            {DCODE(Int), 1, 'b'}, {DCODE(Int), 2, 'h'}, {DCODE(Int), 4, 'i'}, {DCODE(Int), 8, 'l'},
-                            {DCODE(Float), 4, 'f'}, {DCODE(Float), 8, 'd'}, {DCODE(Float), 16, 'g'}
-                        }};
-                    #undef DCODE
-                    for (const auto& [code_val, size, letter] : mappings)
-                        if (code_val == dtype_code && size == sizeof_item)
-                            return letter;
-                    throw std::runtime_error("Unsupported dtype");
-                };
-
-                // Compute the letter code for the buffer type
-                uint8_t dtype_code_ys = ys.dtype().code;
-                size_t sizeof_item_ys = ys.dtype().bits / 8;
-                char ys_type = _nanobind_buffer_type_to_letter_code(dtype_code_ys, sizeof_item_ys);
-
-                // call the correct template version by casting
-                if (ys_type == 'B')
-                    ImPlot::PlotBars(label_id, static_cast<const uint8_t *>(xs_from_pyarray), static_cast<const uint8_t *>(ys_from_pyarray), static_cast<int>(ys_count), bar_size, flags, offset, ys_stride);
-                else if (ys_type == 'b')
-                    ImPlot::PlotBars(label_id, static_cast<const int8_t *>(xs_from_pyarray), static_cast<const int8_t *>(ys_from_pyarray), static_cast<int>(ys_count), bar_size, flags, offset, ys_stride);
-                else if (ys_type == 'H')
-                    ImPlot::PlotBars(label_id, static_cast<const uint16_t *>(xs_from_pyarray), static_cast<const uint16_t *>(ys_from_pyarray), static_cast<int>(ys_count), bar_size, flags, offset, ys_stride);
-                else if (ys_type == 'h')
-                    ImPlot::PlotBars(label_id, static_cast<const int16_t *>(xs_from_pyarray), static_cast<const int16_t *>(ys_from_pyarray), static_cast<int>(ys_count), bar_size, flags, offset, ys_stride);
-                else if (ys_type == 'I')
-                    ImPlot::PlotBars(label_id, static_cast<const uint32_t *>(xs_from_pyarray), static_cast<const uint32_t *>(ys_from_pyarray), static_cast<int>(ys_count), bar_size, flags, offset, ys_stride);
-                else if (ys_type == 'i')
-                    ImPlot::PlotBars(label_id, static_cast<const int32_t *>(xs_from_pyarray), static_cast<const int32_t *>(ys_from_pyarray), static_cast<int>(ys_count), bar_size, flags, offset, ys_stride);
-                else if (ys_type == 'L')
-                    ImPlot::PlotBars(label_id, static_cast<const np_uint_l *>(xs_from_pyarray), static_cast<const np_uint_l *>(ys_from_pyarray), static_cast<int>(ys_count), bar_size, flags, offset, ys_stride);
-                else if (ys_type == 'l')
-                    ImPlot::PlotBars(label_id, static_cast<const np_int_l *>(xs_from_pyarray), static_cast<const np_int_l *>(ys_from_pyarray), static_cast<int>(ys_count), bar_size, flags, offset, ys_stride);
-                else if (ys_type == 'f')
-                    ImPlot::PlotBars(label_id, static_cast<const float *>(xs_from_pyarray), static_cast<const float *>(ys_from_pyarray), static_cast<int>(ys_count), bar_size, flags, offset, ys_stride);
-                else if (ys_type == 'd')
-                    ImPlot::PlotBars(label_id, static_cast<const double *>(xs_from_pyarray), static_cast<const double *>(ys_from_pyarray), static_cast<int>(ys_count), bar_size, flags, offset, ys_stride);
-                else if (ys_type == 'g')
-                    ImPlot::PlotBars(label_id, static_cast<const long double *>(xs_from_pyarray), static_cast<const long double *>(ys_from_pyarray), static_cast<int>(ys_count), bar_size, flags, offset, ys_stride);
-                else if (ys_type == 'q')
-                    ImPlot::PlotBars(label_id, static_cast<const long long *>(xs_from_pyarray), static_cast<const long long *>(ys_from_pyarray), static_cast<int>(ys_count), bar_size, flags, offset, ys_stride);
-                // If we reach this point, the array type is not supported!
-                else
-                    throw std::runtime_error(std::string("Bad array type ('") + ys_type + "') for param ys");
-            };
-            auto PlotBars_adapt_exclude_params = [&PlotBars_adapt_c_buffers](const char * label_id, const nb::ndarray<> & xs, const nb::ndarray<> & ys, double bar_size, ImPlotBarsFlags flags = 0, int offset = 0)
-            {
-                PlotBars_adapt_c_buffers(label_id, xs, ys, bar_size, flags, offset, -1);
-            };
-
-            PlotBars_adapt_exclude_params(label_id, xs, ys, bar_size, flags, offset);
-        },     nb::arg("label_id"), nb::arg("xs"), nb::arg("ys"), nb::arg("bar_size"), nb::arg("flags") = 0, nb::arg("offset") = 0);
-
-    m.def("plot_bar_groups",
-        [](const std::vector<std::string> & label_ids, const nb::ndarray<> & values, int group_count, double group_size = 0.67, double shift = 0, ImPlotBarGroupsFlags flags = 0)
-        {
-            auto PlotBarGroups_adapt_c_buffers = [](const char * const label_ids[], const nb::ndarray<> & values, int group_count, double group_size = 0.67, double shift = 0, ImPlotBarGroupsFlags flags = 0)
-            {
-                // Check if the array is 1D and C-contiguous
-                if (! (values.ndim() == 1 && values.stride(0) == 1))
-                    throw std::runtime_error("The array must be 1D and contiguous");
-
-                // convert nb::ndarray to C standard buffer (const)
-                const void * values_from_pyarray = values.data();
-                size_t values_count = values.shape(0);
-
-                using np_uint_l = uint64_t;
-                using np_int_l = int64_t;
-
-                // Define a lambda to compute the letter code for the buffer type
-                auto _nanobind_buffer_type_to_letter_code = [](uint8_t dtype_code, size_t sizeof_item)  -> char
-                {
-                    #define DCODE(T) static_cast<uint8_t>(nb::dlpack::dtype_code::T)
-                        const std::array<std::tuple<uint8_t, size_t, char>, 11> mappings = {{
-                            {DCODE(UInt), 1, 'B'}, {DCODE(UInt), 2, 'H'}, {DCODE(UInt), 4, 'I'}, {DCODE(UInt), 8, 'L'},
-                            {DCODE(Int), 1, 'b'}, {DCODE(Int), 2, 'h'}, {DCODE(Int), 4, 'i'}, {DCODE(Int), 8, 'l'},
-                            {DCODE(Float), 4, 'f'}, {DCODE(Float), 8, 'd'}, {DCODE(Float), 16, 'g'}
-                        }};
-                    #undef DCODE
-                    for (const auto& [code_val, size, letter] : mappings)
-                        if (code_val == dtype_code && size == sizeof_item)
-                            return letter;
-                    throw std::runtime_error("Unsupported dtype");
-                };
-
-                // Compute the letter code for the buffer type
-                uint8_t dtype_code_values = values.dtype().code;
-                size_t sizeof_item_values = values.dtype().bits / 8;
-                char values_type = _nanobind_buffer_type_to_letter_code(dtype_code_values, sizeof_item_values);
-
-                // call the correct template version by casting
-                if (values_type == 'B')
-                    ImPlot::PlotBarGroups(label_ids, static_cast<const uint8_t *>(values_from_pyarray), static_cast<int>(values_count), group_count, group_size, shift, flags);
-                else if (values_type == 'b')
-                    ImPlot::PlotBarGroups(label_ids, static_cast<const int8_t *>(values_from_pyarray), static_cast<int>(values_count), group_count, group_size, shift, flags);
-                else if (values_type == 'H')
-                    ImPlot::PlotBarGroups(label_ids, static_cast<const uint16_t *>(values_from_pyarray), static_cast<int>(values_count), group_count, group_size, shift, flags);
-                else if (values_type == 'h')
-                    ImPlot::PlotBarGroups(label_ids, static_cast<const int16_t *>(values_from_pyarray), static_cast<int>(values_count), group_count, group_size, shift, flags);
-                else if (values_type == 'I')
-                    ImPlot::PlotBarGroups(label_ids, static_cast<const uint32_t *>(values_from_pyarray), static_cast<int>(values_count), group_count, group_size, shift, flags);
-                else if (values_type == 'i')
-                    ImPlot::PlotBarGroups(label_ids, static_cast<const int32_t *>(values_from_pyarray), static_cast<int>(values_count), group_count, group_size, shift, flags);
-                else if (values_type == 'L')
-                    ImPlot::PlotBarGroups(label_ids, static_cast<const np_uint_l *>(values_from_pyarray), static_cast<int>(values_count), group_count, group_size, shift, flags);
-                else if (values_type == 'l')
-                    ImPlot::PlotBarGroups(label_ids, static_cast<const np_int_l *>(values_from_pyarray), static_cast<int>(values_count), group_count, group_size, shift, flags);
-                else if (values_type == 'f')
-                    ImPlot::PlotBarGroups(label_ids, static_cast<const float *>(values_from_pyarray), static_cast<int>(values_count), group_count, group_size, shift, flags);
-                else if (values_type == 'd')
-                    ImPlot::PlotBarGroups(label_ids, static_cast<const double *>(values_from_pyarray), static_cast<int>(values_count), group_count, group_size, shift, flags);
-                else if (values_type == 'g')
-                    ImPlot::PlotBarGroups(label_ids, static_cast<const long double *>(values_from_pyarray), static_cast<int>(values_count), group_count, group_size, shift, flags);
-                else if (values_type == 'q')
-                    ImPlot::PlotBarGroups(label_ids, static_cast<const long long *>(values_from_pyarray), static_cast<int>(values_count), group_count, group_size, shift, flags);
-                // If we reach this point, the array type is not supported!
-                else
-                    throw std::runtime_error(std::string("Bad array type ('") + values_type + "') for param values");
-            };
-            auto PlotBarGroups_adapt_c_string_list_no_count = [&PlotBarGroups_adapt_c_buffers](const std::vector<std::string> & label_ids, const nb::ndarray<> & values, int group_count, double group_size = 0.67, double shift = 0, ImPlotBarGroupsFlags flags = 0)
-            {
-                std::vector<const char *> label_ids_ptrs;
-                label_ids_ptrs.reserve(label_ids.size());
-                for (const auto& v: label_ids)
-                    label_ids_ptrs.push_back(v.c_str());
-
-                PlotBarGroups_adapt_c_buffers(label_ids_ptrs.data(), values, group_count, group_size, shift, flags);
-            };
-
-            PlotBarGroups_adapt_c_string_list_no_count(label_ids, values, group_count, group_size, shift, flags);
-        },
-        nb::arg("label_ids"), nb::arg("values"), nb::arg("group_count"), nb::arg("group_size") = 0.67, nb::arg("shift") = 0, nb::arg("flags") = 0,
-        "Plots a group of bars. #values is a row-major matrix with #item_count rows and #group_count cols. #label_ids should have #item_count elements.");
-
-    m.def("plot_error_bars",
-        [](const char * label_id, const nb::ndarray<> & xs, const nb::ndarray<> & ys, const nb::ndarray<> & err, ImPlotErrorBarsFlags flags = 0, int offset = 0)
-        {
-            auto PlotErrorBars_adapt_c_buffers = [](const char * label_id, const nb::ndarray<> & xs, const nb::ndarray<> & ys, const nb::ndarray<> & err, ImPlotErrorBarsFlags flags = 0, int offset = 0, int stride = -1)
-            {
-                // Check if the array is 1D and C-contiguous
-                if (! (xs.ndim() == 1 && xs.stride(0) == 1))
-                    throw std::runtime_error("The array must be 1D and contiguous");
-
-                // convert nb::ndarray to C standard buffer (const)
-                const void * xs_from_pyarray = xs.data();
-                size_t xs_count = xs.shape(0);
-
-                // Check if the array is 1D and C-contiguous
-                if (! (ys.ndim() == 1 && ys.stride(0) == 1))
-                    throw std::runtime_error("The array must be 1D and contiguous");
-
-                // convert nb::ndarray to C standard buffer (const)
-                const void * ys_from_pyarray = ys.data();
-                size_t ys_count = ys.shape(0);
-
-                // Check if the array is 1D and C-contiguous
-                if (! (err.ndim() == 1 && err.stride(0) == 1))
-                    throw std::runtime_error("The array must be 1D and contiguous");
-
-                // convert nb::ndarray to C standard buffer (const)
-                const void * err_from_pyarray = err.data();
-                size_t err_count = err.shape(0);
-
-                // process stride default value (which was a sizeof in C++)
-                int err_stride = stride;
-                if (err_stride == -1)
-                    err_stride = (int)err.itemsize();
-
-                using np_uint_l = uint64_t;
-                using np_int_l = int64_t;
-
-                // Define a lambda to compute the letter code for the buffer type
-                auto _nanobind_buffer_type_to_letter_code = [](uint8_t dtype_code, size_t sizeof_item)  -> char
-                {
-                    #define DCODE(T) static_cast<uint8_t>(nb::dlpack::dtype_code::T)
-                        const std::array<std::tuple<uint8_t, size_t, char>, 11> mappings = {{
-                            {DCODE(UInt), 1, 'B'}, {DCODE(UInt), 2, 'H'}, {DCODE(UInt), 4, 'I'}, {DCODE(UInt), 8, 'L'},
-                            {DCODE(Int), 1, 'b'}, {DCODE(Int), 2, 'h'}, {DCODE(Int), 4, 'i'}, {DCODE(Int), 8, 'l'},
-                            {DCODE(Float), 4, 'f'}, {DCODE(Float), 8, 'd'}, {DCODE(Float), 16, 'g'}
-                        }};
-                    #undef DCODE
-                    for (const auto& [code_val, size, letter] : mappings)
-                        if (code_val == dtype_code && size == sizeof_item)
-                            return letter;
-                    throw std::runtime_error("Unsupported dtype");
-                };
-
-                // Compute the letter code for the buffer type
-                uint8_t dtype_code_err = err.dtype().code;
-                size_t sizeof_item_err = err.dtype().bits / 8;
-                char err_type = _nanobind_buffer_type_to_letter_code(dtype_code_err, sizeof_item_err);
-
-                // call the correct template version by casting
-                if (err_type == 'B')
-                    ImPlot::PlotErrorBars(label_id, static_cast<const uint8_t *>(xs_from_pyarray), static_cast<const uint8_t *>(ys_from_pyarray), static_cast<const uint8_t *>(err_from_pyarray), static_cast<int>(err_count), flags, offset, err_stride);
-                else if (err_type == 'b')
-                    ImPlot::PlotErrorBars(label_id, static_cast<const int8_t *>(xs_from_pyarray), static_cast<const int8_t *>(ys_from_pyarray), static_cast<const int8_t *>(err_from_pyarray), static_cast<int>(err_count), flags, offset, err_stride);
-                else if (err_type == 'H')
-                    ImPlot::PlotErrorBars(label_id, static_cast<const uint16_t *>(xs_from_pyarray), static_cast<const uint16_t *>(ys_from_pyarray), static_cast<const uint16_t *>(err_from_pyarray), static_cast<int>(err_count), flags, offset, err_stride);
-                else if (err_type == 'h')
-                    ImPlot::PlotErrorBars(label_id, static_cast<const int16_t *>(xs_from_pyarray), static_cast<const int16_t *>(ys_from_pyarray), static_cast<const int16_t *>(err_from_pyarray), static_cast<int>(err_count), flags, offset, err_stride);
-                else if (err_type == 'I')
-                    ImPlot::PlotErrorBars(label_id, static_cast<const uint32_t *>(xs_from_pyarray), static_cast<const uint32_t *>(ys_from_pyarray), static_cast<const uint32_t *>(err_from_pyarray), static_cast<int>(err_count), flags, offset, err_stride);
-                else if (err_type == 'i')
-                    ImPlot::PlotErrorBars(label_id, static_cast<const int32_t *>(xs_from_pyarray), static_cast<const int32_t *>(ys_from_pyarray), static_cast<const int32_t *>(err_from_pyarray), static_cast<int>(err_count), flags, offset, err_stride);
-                else if (err_type == 'L')
-                    ImPlot::PlotErrorBars(label_id, static_cast<const np_uint_l *>(xs_from_pyarray), static_cast<const np_uint_l *>(ys_from_pyarray), static_cast<const np_uint_l *>(err_from_pyarray), static_cast<int>(err_count), flags, offset, err_stride);
-                else if (err_type == 'l')
-                    ImPlot::PlotErrorBars(label_id, static_cast<const np_int_l *>(xs_from_pyarray), static_cast<const np_int_l *>(ys_from_pyarray), static_cast<const np_int_l *>(err_from_pyarray), static_cast<int>(err_count), flags, offset, err_stride);
-                else if (err_type == 'f')
-                    ImPlot::PlotErrorBars(label_id, static_cast<const float *>(xs_from_pyarray), static_cast<const float *>(ys_from_pyarray), static_cast<const float *>(err_from_pyarray), static_cast<int>(err_count), flags, offset, err_stride);
-                else if (err_type == 'd')
-                    ImPlot::PlotErrorBars(label_id, static_cast<const double *>(xs_from_pyarray), static_cast<const double *>(ys_from_pyarray), static_cast<const double *>(err_from_pyarray), static_cast<int>(err_count), flags, offset, err_stride);
-                else if (err_type == 'g')
-                    ImPlot::PlotErrorBars(label_id, static_cast<const long double *>(xs_from_pyarray), static_cast<const long double *>(ys_from_pyarray), static_cast<const long double *>(err_from_pyarray), static_cast<int>(err_count), flags, offset, err_stride);
-                else if (err_type == 'q')
-                    ImPlot::PlotErrorBars(label_id, static_cast<const long long *>(xs_from_pyarray), static_cast<const long long *>(ys_from_pyarray), static_cast<const long long *>(err_from_pyarray), static_cast<int>(err_count), flags, offset, err_stride);
-                // If we reach this point, the array type is not supported!
-                else
-                    throw std::runtime_error(std::string("Bad array type ('") + err_type + "') for param err");
-            };
-            auto PlotErrorBars_adapt_exclude_params = [&PlotErrorBars_adapt_c_buffers](const char * label_id, const nb::ndarray<> & xs, const nb::ndarray<> & ys, const nb::ndarray<> & err, ImPlotErrorBarsFlags flags = 0, int offset = 0)
-            {
-                PlotErrorBars_adapt_c_buffers(label_id, xs, ys, err, flags, offset, -1);
-            };
-
-            PlotErrorBars_adapt_exclude_params(label_id, xs, ys, err, flags, offset);
-        },     nb::arg("label_id"), nb::arg("xs"), nb::arg("ys"), nb::arg("err"), nb::arg("flags") = 0, nb::arg("offset") = 0);
-
-    m.def("plot_error_bars",
-        [](const char * label_id, const nb::ndarray<> & xs, const nb::ndarray<> & ys, const nb::ndarray<> & neg, const nb::ndarray<> & pos, ImPlotErrorBarsFlags flags = 0, int offset = 0)
-        {
-            auto PlotErrorBars_adapt_c_buffers = [](const char * label_id, const nb::ndarray<> & xs, const nb::ndarray<> & ys, const nb::ndarray<> & neg, const nb::ndarray<> & pos, ImPlotErrorBarsFlags flags = 0, int offset = 0, int stride = -1)
-            {
-                // Check if the array is 1D and C-contiguous
-                if (! (xs.ndim() == 1 && xs.stride(0) == 1))
-                    throw std::runtime_error("The array must be 1D and contiguous");
-
-                // convert nb::ndarray to C standard buffer (const)
-                const void * xs_from_pyarray = xs.data();
-                size_t xs_count = xs.shape(0);
-
-                // Check if the array is 1D and C-contiguous
-                if (! (ys.ndim() == 1 && ys.stride(0) == 1))
-                    throw std::runtime_error("The array must be 1D and contiguous");
-
-                // convert nb::ndarray to C standard buffer (const)
-                const void * ys_from_pyarray = ys.data();
-                size_t ys_count = ys.shape(0);
-
-                // Check if the array is 1D and C-contiguous
-                if (! (neg.ndim() == 1 && neg.stride(0) == 1))
-                    throw std::runtime_error("The array must be 1D and contiguous");
-
-                // convert nb::ndarray to C standard buffer (const)
-                const void * neg_from_pyarray = neg.data();
-                size_t neg_count = neg.shape(0);
-
-                // Check if the array is 1D and C-contiguous
-                if (! (pos.ndim() == 1 && pos.stride(0) == 1))
-                    throw std::runtime_error("The array must be 1D and contiguous");
-
-                // convert nb::ndarray to C standard buffer (const)
-                const void * pos_from_pyarray = pos.data();
-                size_t pos_count = pos.shape(0);
-
-                // process stride default value (which was a sizeof in C++)
-                int pos_stride = stride;
-                if (pos_stride == -1)
-                    pos_stride = (int)pos.itemsize();
-
-                using np_uint_l = uint64_t;
-                using np_int_l = int64_t;
-
-                // Define a lambda to compute the letter code for the buffer type
-                auto _nanobind_buffer_type_to_letter_code = [](uint8_t dtype_code, size_t sizeof_item)  -> char
-                {
-                    #define DCODE(T) static_cast<uint8_t>(nb::dlpack::dtype_code::T)
-                        const std::array<std::tuple<uint8_t, size_t, char>, 11> mappings = {{
-                            {DCODE(UInt), 1, 'B'}, {DCODE(UInt), 2, 'H'}, {DCODE(UInt), 4, 'I'}, {DCODE(UInt), 8, 'L'},
-                            {DCODE(Int), 1, 'b'}, {DCODE(Int), 2, 'h'}, {DCODE(Int), 4, 'i'}, {DCODE(Int), 8, 'l'},
-                            {DCODE(Float), 4, 'f'}, {DCODE(Float), 8, 'd'}, {DCODE(Float), 16, 'g'}
-                        }};
-                    #undef DCODE
-                    for (const auto& [code_val, size, letter] : mappings)
-                        if (code_val == dtype_code && size == sizeof_item)
-                            return letter;
-                    throw std::runtime_error("Unsupported dtype");
-                };
-
-                // Compute the letter code for the buffer type
-                uint8_t dtype_code_pos = pos.dtype().code;
-                size_t sizeof_item_pos = pos.dtype().bits / 8;
-                char pos_type = _nanobind_buffer_type_to_letter_code(dtype_code_pos, sizeof_item_pos);
-
-                // call the correct template version by casting
-                if (pos_type == 'B')
-                    ImPlot::PlotErrorBars(label_id, static_cast<const uint8_t *>(xs_from_pyarray), static_cast<const uint8_t *>(ys_from_pyarray), static_cast<const uint8_t *>(neg_from_pyarray), static_cast<const uint8_t *>(pos_from_pyarray), static_cast<int>(pos_count), flags, offset, pos_stride);
-                else if (pos_type == 'b')
-                    ImPlot::PlotErrorBars(label_id, static_cast<const int8_t *>(xs_from_pyarray), static_cast<const int8_t *>(ys_from_pyarray), static_cast<const int8_t *>(neg_from_pyarray), static_cast<const int8_t *>(pos_from_pyarray), static_cast<int>(pos_count), flags, offset, pos_stride);
-                else if (pos_type == 'H')
-                    ImPlot::PlotErrorBars(label_id, static_cast<const uint16_t *>(xs_from_pyarray), static_cast<const uint16_t *>(ys_from_pyarray), static_cast<const uint16_t *>(neg_from_pyarray), static_cast<const uint16_t *>(pos_from_pyarray), static_cast<int>(pos_count), flags, offset, pos_stride);
-                else if (pos_type == 'h')
-                    ImPlot::PlotErrorBars(label_id, static_cast<const int16_t *>(xs_from_pyarray), static_cast<const int16_t *>(ys_from_pyarray), static_cast<const int16_t *>(neg_from_pyarray), static_cast<const int16_t *>(pos_from_pyarray), static_cast<int>(pos_count), flags, offset, pos_stride);
-                else if (pos_type == 'I')
-                    ImPlot::PlotErrorBars(label_id, static_cast<const uint32_t *>(xs_from_pyarray), static_cast<const uint32_t *>(ys_from_pyarray), static_cast<const uint32_t *>(neg_from_pyarray), static_cast<const uint32_t *>(pos_from_pyarray), static_cast<int>(pos_count), flags, offset, pos_stride);
-                else if (pos_type == 'i')
-                    ImPlot::PlotErrorBars(label_id, static_cast<const int32_t *>(xs_from_pyarray), static_cast<const int32_t *>(ys_from_pyarray), static_cast<const int32_t *>(neg_from_pyarray), static_cast<const int32_t *>(pos_from_pyarray), static_cast<int>(pos_count), flags, offset, pos_stride);
-                else if (pos_type == 'L')
-                    ImPlot::PlotErrorBars(label_id, static_cast<const np_uint_l *>(xs_from_pyarray), static_cast<const np_uint_l *>(ys_from_pyarray), static_cast<const np_uint_l *>(neg_from_pyarray), static_cast<const np_uint_l *>(pos_from_pyarray), static_cast<int>(pos_count), flags, offset, pos_stride);
-                else if (pos_type == 'l')
-                    ImPlot::PlotErrorBars(label_id, static_cast<const np_int_l *>(xs_from_pyarray), static_cast<const np_int_l *>(ys_from_pyarray), static_cast<const np_int_l *>(neg_from_pyarray), static_cast<const np_int_l *>(pos_from_pyarray), static_cast<int>(pos_count), flags, offset, pos_stride);
-                else if (pos_type == 'f')
-                    ImPlot::PlotErrorBars(label_id, static_cast<const float *>(xs_from_pyarray), static_cast<const float *>(ys_from_pyarray), static_cast<const float *>(neg_from_pyarray), static_cast<const float *>(pos_from_pyarray), static_cast<int>(pos_count), flags, offset, pos_stride);
-                else if (pos_type == 'd')
-                    ImPlot::PlotErrorBars(label_id, static_cast<const double *>(xs_from_pyarray), static_cast<const double *>(ys_from_pyarray), static_cast<const double *>(neg_from_pyarray), static_cast<const double *>(pos_from_pyarray), static_cast<int>(pos_count), flags, offset, pos_stride);
-                else if (pos_type == 'g')
-                    ImPlot::PlotErrorBars(label_id, static_cast<const long double *>(xs_from_pyarray), static_cast<const long double *>(ys_from_pyarray), static_cast<const long double *>(neg_from_pyarray), static_cast<const long double *>(pos_from_pyarray), static_cast<int>(pos_count), flags, offset, pos_stride);
-                else if (pos_type == 'q')
-                    ImPlot::PlotErrorBars(label_id, static_cast<const long long *>(xs_from_pyarray), static_cast<const long long *>(ys_from_pyarray), static_cast<const long long *>(neg_from_pyarray), static_cast<const long long *>(pos_from_pyarray), static_cast<int>(pos_count), flags, offset, pos_stride);
-                // If we reach this point, the array type is not supported!
-                else
-                    throw std::runtime_error(std::string("Bad array type ('") + pos_type + "') for param pos");
-            };
-            auto PlotErrorBars_adapt_exclude_params = [&PlotErrorBars_adapt_c_buffers](const char * label_id, const nb::ndarray<> & xs, const nb::ndarray<> & ys, const nb::ndarray<> & neg, const nb::ndarray<> & pos, ImPlotErrorBarsFlags flags = 0, int offset = 0)
-            {
-                PlotErrorBars_adapt_c_buffers(label_id, xs, ys, neg, pos, flags, offset, -1);
-            };
-
-            PlotErrorBars_adapt_exclude_params(label_id, xs, ys, neg, pos, flags, offset);
-        },     nb::arg("label_id"), nb::arg("xs"), nb::arg("ys"), nb::arg("neg"), nb::arg("pos"), nb::arg("flags") = 0, nb::arg("offset") = 0);
-
-    m.def("plot_stems",
-        [](const char * label_id, const nb::ndarray<> & values, double ref = 0, double scale = 1, double start = 0, ImPlotStemsFlags flags = 0, int offset = 0)
-        {
-            auto PlotStems_adapt_c_buffers = [](const char * label_id, const nb::ndarray<> & values, double ref = 0, double scale = 1, double start = 0, ImPlotStemsFlags flags = 0, int offset = 0, int stride = -1)
-            {
-                // Check if the array is 1D and C-contiguous
-                if (! (values.ndim() == 1 && values.stride(0) == 1))
-                    throw std::runtime_error("The array must be 1D and contiguous");
-
-                // convert nb::ndarray to C standard buffer (const)
-                const void * values_from_pyarray = values.data();
-                size_t values_count = values.shape(0);
-
-                // process stride default value (which was a sizeof in C++)
-                int values_stride = stride;
-                if (values_stride == -1)
-                    values_stride = (int)values.itemsize();
-
-                using np_uint_l = uint64_t;
-                using np_int_l = int64_t;
-
-                // Define a lambda to compute the letter code for the buffer type
-                auto _nanobind_buffer_type_to_letter_code = [](uint8_t dtype_code, size_t sizeof_item)  -> char
-                {
-                    #define DCODE(T) static_cast<uint8_t>(nb::dlpack::dtype_code::T)
-                        const std::array<std::tuple<uint8_t, size_t, char>, 11> mappings = {{
-                            {DCODE(UInt), 1, 'B'}, {DCODE(UInt), 2, 'H'}, {DCODE(UInt), 4, 'I'}, {DCODE(UInt), 8, 'L'},
-                            {DCODE(Int), 1, 'b'}, {DCODE(Int), 2, 'h'}, {DCODE(Int), 4, 'i'}, {DCODE(Int), 8, 'l'},
-                            {DCODE(Float), 4, 'f'}, {DCODE(Float), 8, 'd'}, {DCODE(Float), 16, 'g'}
-                        }};
-                    #undef DCODE
-                    for (const auto& [code_val, size, letter] : mappings)
-                        if (code_val == dtype_code && size == sizeof_item)
-                            return letter;
-                    throw std::runtime_error("Unsupported dtype");
-                };
-
-                // Compute the letter code for the buffer type
-                uint8_t dtype_code_values = values.dtype().code;
-                size_t sizeof_item_values = values.dtype().bits / 8;
-                char values_type = _nanobind_buffer_type_to_letter_code(dtype_code_values, sizeof_item_values);
-
-                // call the correct template version by casting
-                if (values_type == 'B')
-                    ImPlot::PlotStems(label_id, static_cast<const uint8_t *>(values_from_pyarray), static_cast<int>(values_count), ref, scale, start, flags, offset, values_stride);
-                else if (values_type == 'b')
-                    ImPlot::PlotStems(label_id, static_cast<const int8_t *>(values_from_pyarray), static_cast<int>(values_count), ref, scale, start, flags, offset, values_stride);
-                else if (values_type == 'H')
-                    ImPlot::PlotStems(label_id, static_cast<const uint16_t *>(values_from_pyarray), static_cast<int>(values_count), ref, scale, start, flags, offset, values_stride);
-                else if (values_type == 'h')
-                    ImPlot::PlotStems(label_id, static_cast<const int16_t *>(values_from_pyarray), static_cast<int>(values_count), ref, scale, start, flags, offset, values_stride);
-                else if (values_type == 'I')
-                    ImPlot::PlotStems(label_id, static_cast<const uint32_t *>(values_from_pyarray), static_cast<int>(values_count), ref, scale, start, flags, offset, values_stride);
-                else if (values_type == 'i')
-                    ImPlot::PlotStems(label_id, static_cast<const int32_t *>(values_from_pyarray), static_cast<int>(values_count), ref, scale, start, flags, offset, values_stride);
-                else if (values_type == 'L')
-                    ImPlot::PlotStems(label_id, static_cast<const np_uint_l *>(values_from_pyarray), static_cast<int>(values_count), ref, scale, start, flags, offset, values_stride);
-                else if (values_type == 'l')
-                    ImPlot::PlotStems(label_id, static_cast<const np_int_l *>(values_from_pyarray), static_cast<int>(values_count), ref, scale, start, flags, offset, values_stride);
-                else if (values_type == 'f')
-                    ImPlot::PlotStems(label_id, static_cast<const float *>(values_from_pyarray), static_cast<int>(values_count), ref, scale, start, flags, offset, values_stride);
-                else if (values_type == 'd')
-                    ImPlot::PlotStems(label_id, static_cast<const double *>(values_from_pyarray), static_cast<int>(values_count), ref, scale, start, flags, offset, values_stride);
-                else if (values_type == 'g')
-                    ImPlot::PlotStems(label_id, static_cast<const long double *>(values_from_pyarray), static_cast<int>(values_count), ref, scale, start, flags, offset, values_stride);
-                else if (values_type == 'q')
-                    ImPlot::PlotStems(label_id, static_cast<const long long *>(values_from_pyarray), static_cast<int>(values_count), ref, scale, start, flags, offset, values_stride);
-                // If we reach this point, the array type is not supported!
-                else
-                    throw std::runtime_error(std::string("Bad array type ('") + values_type + "') for param values");
-            };
-            auto PlotStems_adapt_exclude_params = [&PlotStems_adapt_c_buffers](const char * label_id, const nb::ndarray<> & values, double ref = 0, double scale = 1, double start = 0, ImPlotStemsFlags flags = 0, int offset = 0)
-            {
-                PlotStems_adapt_c_buffers(label_id, values, ref, scale, start, flags, offset, -1);
-            };
-
-            PlotStems_adapt_exclude_params(label_id, values, ref, scale, start, flags, offset);
-        },     nb::arg("label_id"), nb::arg("values"), nb::arg("ref") = 0, nb::arg("scale") = 1, nb::arg("start") = 0, nb::arg("flags") = 0, nb::arg("offset") = 0);
-
-    m.def("plot_stems",
-        [](const char * label_id, const nb::ndarray<> & xs, const nb::ndarray<> & ys, double ref = 0, ImPlotStemsFlags flags = 0, int offset = 0)
-        {
-            auto PlotStems_adapt_c_buffers = [](const char * label_id, const nb::ndarray<> & xs, const nb::ndarray<> & ys, double ref = 0, ImPlotStemsFlags flags = 0, int offset = 0, int stride = -1)
-            {
-                // Check if the array is 1D and C-contiguous
-                if (! (xs.ndim() == 1 && xs.stride(0) == 1))
-                    throw std::runtime_error("The array must be 1D and contiguous");
-
-                // convert nb::ndarray to C standard buffer (const)
-                const void * xs_from_pyarray = xs.data();
-                size_t xs_count = xs.shape(0);
-
-                // Check if the array is 1D and C-contiguous
-                if (! (ys.ndim() == 1 && ys.stride(0) == 1))
-                    throw std::runtime_error("The array must be 1D and contiguous");
-
-                // convert nb::ndarray to C standard buffer (const)
-                const void * ys_from_pyarray = ys.data();
-                size_t ys_count = ys.shape(0);
-
-                // process stride default value (which was a sizeof in C++)
-                int ys_stride = stride;
-                if (ys_stride == -1)
-                    ys_stride = (int)ys.itemsize();
-
-                using np_uint_l = uint64_t;
-                using np_int_l = int64_t;
-
-                // Define a lambda to compute the letter code for the buffer type
-                auto _nanobind_buffer_type_to_letter_code = [](uint8_t dtype_code, size_t sizeof_item)  -> char
-                {
-                    #define DCODE(T) static_cast<uint8_t>(nb::dlpack::dtype_code::T)
-                        const std::array<std::tuple<uint8_t, size_t, char>, 11> mappings = {{
-                            {DCODE(UInt), 1, 'B'}, {DCODE(UInt), 2, 'H'}, {DCODE(UInt), 4, 'I'}, {DCODE(UInt), 8, 'L'},
-                            {DCODE(Int), 1, 'b'}, {DCODE(Int), 2, 'h'}, {DCODE(Int), 4, 'i'}, {DCODE(Int), 8, 'l'},
-                            {DCODE(Float), 4, 'f'}, {DCODE(Float), 8, 'd'}, {DCODE(Float), 16, 'g'}
-                        }};
-                    #undef DCODE
-                    for (const auto& [code_val, size, letter] : mappings)
-                        if (code_val == dtype_code && size == sizeof_item)
-                            return letter;
-                    throw std::runtime_error("Unsupported dtype");
-                };
-
-                // Compute the letter code for the buffer type
-                uint8_t dtype_code_ys = ys.dtype().code;
-                size_t sizeof_item_ys = ys.dtype().bits / 8;
-                char ys_type = _nanobind_buffer_type_to_letter_code(dtype_code_ys, sizeof_item_ys);
-
-                // call the correct template version by casting
-                if (ys_type == 'B')
-                    ImPlot::PlotStems(label_id, static_cast<const uint8_t *>(xs_from_pyarray), static_cast<const uint8_t *>(ys_from_pyarray), static_cast<int>(ys_count), ref, flags, offset, ys_stride);
-                else if (ys_type == 'b')
-                    ImPlot::PlotStems(label_id, static_cast<const int8_t *>(xs_from_pyarray), static_cast<const int8_t *>(ys_from_pyarray), static_cast<int>(ys_count), ref, flags, offset, ys_stride);
-                else if (ys_type == 'H')
-                    ImPlot::PlotStems(label_id, static_cast<const uint16_t *>(xs_from_pyarray), static_cast<const uint16_t *>(ys_from_pyarray), static_cast<int>(ys_count), ref, flags, offset, ys_stride);
-                else if (ys_type == 'h')
-                    ImPlot::PlotStems(label_id, static_cast<const int16_t *>(xs_from_pyarray), static_cast<const int16_t *>(ys_from_pyarray), static_cast<int>(ys_count), ref, flags, offset, ys_stride);
-                else if (ys_type == 'I')
-                    ImPlot::PlotStems(label_id, static_cast<const uint32_t *>(xs_from_pyarray), static_cast<const uint32_t *>(ys_from_pyarray), static_cast<int>(ys_count), ref, flags, offset, ys_stride);
-                else if (ys_type == 'i')
-                    ImPlot::PlotStems(label_id, static_cast<const int32_t *>(xs_from_pyarray), static_cast<const int32_t *>(ys_from_pyarray), static_cast<int>(ys_count), ref, flags, offset, ys_stride);
-                else if (ys_type == 'L')
-                    ImPlot::PlotStems(label_id, static_cast<const np_uint_l *>(xs_from_pyarray), static_cast<const np_uint_l *>(ys_from_pyarray), static_cast<int>(ys_count), ref, flags, offset, ys_stride);
-                else if (ys_type == 'l')
-                    ImPlot::PlotStems(label_id, static_cast<const np_int_l *>(xs_from_pyarray), static_cast<const np_int_l *>(ys_from_pyarray), static_cast<int>(ys_count), ref, flags, offset, ys_stride);
-                else if (ys_type == 'f')
-                    ImPlot::PlotStems(label_id, static_cast<const float *>(xs_from_pyarray), static_cast<const float *>(ys_from_pyarray), static_cast<int>(ys_count), ref, flags, offset, ys_stride);
-                else if (ys_type == 'd')
-                    ImPlot::PlotStems(label_id, static_cast<const double *>(xs_from_pyarray), static_cast<const double *>(ys_from_pyarray), static_cast<int>(ys_count), ref, flags, offset, ys_stride);
-                else if (ys_type == 'g')
-                    ImPlot::PlotStems(label_id, static_cast<const long double *>(xs_from_pyarray), static_cast<const long double *>(ys_from_pyarray), static_cast<int>(ys_count), ref, flags, offset, ys_stride);
-                else if (ys_type == 'q')
-                    ImPlot::PlotStems(label_id, static_cast<const long long *>(xs_from_pyarray), static_cast<const long long *>(ys_from_pyarray), static_cast<int>(ys_count), ref, flags, offset, ys_stride);
-                // If we reach this point, the array type is not supported!
-                else
-                    throw std::runtime_error(std::string("Bad array type ('") + ys_type + "') for param ys");
-            };
-            auto PlotStems_adapt_exclude_params = [&PlotStems_adapt_c_buffers](const char * label_id, const nb::ndarray<> & xs, const nb::ndarray<> & ys, double ref = 0, ImPlotStemsFlags flags = 0, int offset = 0)
-            {
-                PlotStems_adapt_c_buffers(label_id, xs, ys, ref, flags, offset, -1);
-            };
-
-            PlotStems_adapt_exclude_params(label_id, xs, ys, ref, flags, offset);
-        },     nb::arg("label_id"), nb::arg("xs"), nb::arg("ys"), nb::arg("ref") = 0, nb::arg("flags") = 0, nb::arg("offset") = 0);
-
-    m.def("plot_inf_lines",
-        [](const char * label_id, const nb::ndarray<> & values, ImPlotInfLinesFlags flags = 0, int offset = 0)
-        {
-            auto PlotInfLines_adapt_c_buffers = [](const char * label_id, const nb::ndarray<> & values, ImPlotInfLinesFlags flags = 0, int offset = 0, int stride = -1)
-            {
-                // Check if the array is 1D and C-contiguous
-                if (! (values.ndim() == 1 && values.stride(0) == 1))
-                    throw std::runtime_error("The array must be 1D and contiguous");
-
-                // convert nb::ndarray to C standard buffer (const)
-                const void * values_from_pyarray = values.data();
-                size_t values_count = values.shape(0);
-
-                // process stride default value (which was a sizeof in C++)
-                int values_stride = stride;
-                if (values_stride == -1)
-                    values_stride = (int)values.itemsize();
-
-                using np_uint_l = uint64_t;
-                using np_int_l = int64_t;
-
-                // Define a lambda to compute the letter code for the buffer type
-                auto _nanobind_buffer_type_to_letter_code = [](uint8_t dtype_code, size_t sizeof_item)  -> char
-                {
-                    #define DCODE(T) static_cast<uint8_t>(nb::dlpack::dtype_code::T)
-                        const std::array<std::tuple<uint8_t, size_t, char>, 11> mappings = {{
-                            {DCODE(UInt), 1, 'B'}, {DCODE(UInt), 2, 'H'}, {DCODE(UInt), 4, 'I'}, {DCODE(UInt), 8, 'L'},
-                            {DCODE(Int), 1, 'b'}, {DCODE(Int), 2, 'h'}, {DCODE(Int), 4, 'i'}, {DCODE(Int), 8, 'l'},
-                            {DCODE(Float), 4, 'f'}, {DCODE(Float), 8, 'd'}, {DCODE(Float), 16, 'g'}
-                        }};
-                    #undef DCODE
-                    for (const auto& [code_val, size, letter] : mappings)
-                        if (code_val == dtype_code && size == sizeof_item)
-                            return letter;
-                    throw std::runtime_error("Unsupported dtype");
-                };
-
-                // Compute the letter code for the buffer type
-                uint8_t dtype_code_values = values.dtype().code;
-                size_t sizeof_item_values = values.dtype().bits / 8;
-                char values_type = _nanobind_buffer_type_to_letter_code(dtype_code_values, sizeof_item_values);
-
-                // call the correct template version by casting
-                if (values_type == 'B')
-                    ImPlot::PlotInfLines(label_id, static_cast<const uint8_t *>(values_from_pyarray), static_cast<int>(values_count), flags, offset, values_stride);
-                else if (values_type == 'b')
-                    ImPlot::PlotInfLines(label_id, static_cast<const int8_t *>(values_from_pyarray), static_cast<int>(values_count), flags, offset, values_stride);
-                else if (values_type == 'H')
-                    ImPlot::PlotInfLines(label_id, static_cast<const uint16_t *>(values_from_pyarray), static_cast<int>(values_count), flags, offset, values_stride);
-                else if (values_type == 'h')
-                    ImPlot::PlotInfLines(label_id, static_cast<const int16_t *>(values_from_pyarray), static_cast<int>(values_count), flags, offset, values_stride);
-                else if (values_type == 'I')
-                    ImPlot::PlotInfLines(label_id, static_cast<const uint32_t *>(values_from_pyarray), static_cast<int>(values_count), flags, offset, values_stride);
-                else if (values_type == 'i')
-                    ImPlot::PlotInfLines(label_id, static_cast<const int32_t *>(values_from_pyarray), static_cast<int>(values_count), flags, offset, values_stride);
-                else if (values_type == 'L')
-                    ImPlot::PlotInfLines(label_id, static_cast<const np_uint_l *>(values_from_pyarray), static_cast<int>(values_count), flags, offset, values_stride);
-                else if (values_type == 'l')
-                    ImPlot::PlotInfLines(label_id, static_cast<const np_int_l *>(values_from_pyarray), static_cast<int>(values_count), flags, offset, values_stride);
-                else if (values_type == 'f')
-                    ImPlot::PlotInfLines(label_id, static_cast<const float *>(values_from_pyarray), static_cast<int>(values_count), flags, offset, values_stride);
-                else if (values_type == 'd')
-                    ImPlot::PlotInfLines(label_id, static_cast<const double *>(values_from_pyarray), static_cast<int>(values_count), flags, offset, values_stride);
-                else if (values_type == 'g')
-                    ImPlot::PlotInfLines(label_id, static_cast<const long double *>(values_from_pyarray), static_cast<int>(values_count), flags, offset, values_stride);
-                else if (values_type == 'q')
-                    ImPlot::PlotInfLines(label_id, static_cast<const long long *>(values_from_pyarray), static_cast<int>(values_count), flags, offset, values_stride);
-                // If we reach this point, the array type is not supported!
-                else
-                    throw std::runtime_error(std::string("Bad array type ('") + values_type + "') for param values");
-            };
-            auto PlotInfLines_adapt_exclude_params = [&PlotInfLines_adapt_c_buffers](const char * label_id, const nb::ndarray<> & values, ImPlotInfLinesFlags flags = 0, int offset = 0)
-            {
-                PlotInfLines_adapt_c_buffers(label_id, values, flags, offset, -1);
-            };
-
-            PlotInfLines_adapt_exclude_params(label_id, values, flags, offset);
-        },
-        nb::arg("label_id"), nb::arg("values"), nb::arg("flags") = 0, nb::arg("offset") = 0,
-        "Plots infinite vertical or horizontal lines (e.g. for references or asymptotes).");
-
-    m.def("plot_pie_chart",
-        [](const std::vector<std::string> & label_ids, const nb::ndarray<> & values, double x, double y, double radius, const char * label_fmt = "%.1f", double angle0 = 90, ImPlotPieChartFlags flags = 0)
-        {
-            auto PlotPieChart_adapt_c_buffers = [](const char * const label_ids[], const nb::ndarray<> & values, double x, double y, double radius, const char * label_fmt = "%.1f", double angle0 = 90, ImPlotPieChartFlags flags = 0)
-            {
-                // Check if the array is 1D and C-contiguous
-                if (! (values.ndim() == 1 && values.stride(0) == 1))
-                    throw std::runtime_error("The array must be 1D and contiguous");
-
-                // convert nb::ndarray to C standard buffer (const)
-                const void * values_from_pyarray = values.data();
-                size_t values_count = values.shape(0);
-
-                using np_uint_l = uint64_t;
-                using np_int_l = int64_t;
-
-                // Define a lambda to compute the letter code for the buffer type
-                auto _nanobind_buffer_type_to_letter_code = [](uint8_t dtype_code, size_t sizeof_item)  -> char
-                {
-                    #define DCODE(T) static_cast<uint8_t>(nb::dlpack::dtype_code::T)
-                        const std::array<std::tuple<uint8_t, size_t, char>, 11> mappings = {{
-                            {DCODE(UInt), 1, 'B'}, {DCODE(UInt), 2, 'H'}, {DCODE(UInt), 4, 'I'}, {DCODE(UInt), 8, 'L'},
-                            {DCODE(Int), 1, 'b'}, {DCODE(Int), 2, 'h'}, {DCODE(Int), 4, 'i'}, {DCODE(Int), 8, 'l'},
-                            {DCODE(Float), 4, 'f'}, {DCODE(Float), 8, 'd'}, {DCODE(Float), 16, 'g'}
-                        }};
-                    #undef DCODE
-                    for (const auto& [code_val, size, letter] : mappings)
-                        if (code_val == dtype_code && size == sizeof_item)
-                            return letter;
-                    throw std::runtime_error("Unsupported dtype");
-                };
-
-                // Compute the letter code for the buffer type
-                uint8_t dtype_code_values = values.dtype().code;
-                size_t sizeof_item_values = values.dtype().bits / 8;
-                char values_type = _nanobind_buffer_type_to_letter_code(dtype_code_values, sizeof_item_values);
-
-                // call the correct template version by casting
-                if (values_type == 'B')
-                    ImPlot::PlotPieChart(label_ids, static_cast<const uint8_t *>(values_from_pyarray), static_cast<int>(values_count), x, y, radius, label_fmt, angle0, flags);
-                else if (values_type == 'b')
-                    ImPlot::PlotPieChart(label_ids, static_cast<const int8_t *>(values_from_pyarray), static_cast<int>(values_count), x, y, radius, label_fmt, angle0, flags);
-                else if (values_type == 'H')
-                    ImPlot::PlotPieChart(label_ids, static_cast<const uint16_t *>(values_from_pyarray), static_cast<int>(values_count), x, y, radius, label_fmt, angle0, flags);
-                else if (values_type == 'h')
-                    ImPlot::PlotPieChart(label_ids, static_cast<const int16_t *>(values_from_pyarray), static_cast<int>(values_count), x, y, radius, label_fmt, angle0, flags);
-                else if (values_type == 'I')
-                    ImPlot::PlotPieChart(label_ids, static_cast<const uint32_t *>(values_from_pyarray), static_cast<int>(values_count), x, y, radius, label_fmt, angle0, flags);
-                else if (values_type == 'i')
-                    ImPlot::PlotPieChart(label_ids, static_cast<const int32_t *>(values_from_pyarray), static_cast<int>(values_count), x, y, radius, label_fmt, angle0, flags);
-                else if (values_type == 'L')
-                    ImPlot::PlotPieChart(label_ids, static_cast<const np_uint_l *>(values_from_pyarray), static_cast<int>(values_count), x, y, radius, label_fmt, angle0, flags);
-                else if (values_type == 'l')
-                    ImPlot::PlotPieChart(label_ids, static_cast<const np_int_l *>(values_from_pyarray), static_cast<int>(values_count), x, y, radius, label_fmt, angle0, flags);
-                else if (values_type == 'f')
-                    ImPlot::PlotPieChart(label_ids, static_cast<const float *>(values_from_pyarray), static_cast<int>(values_count), x, y, radius, label_fmt, angle0, flags);
-                else if (values_type == 'd')
-                    ImPlot::PlotPieChart(label_ids, static_cast<const double *>(values_from_pyarray), static_cast<int>(values_count), x, y, radius, label_fmt, angle0, flags);
-                else if (values_type == 'g')
-                    ImPlot::PlotPieChart(label_ids, static_cast<const long double *>(values_from_pyarray), static_cast<int>(values_count), x, y, radius, label_fmt, angle0, flags);
-                else if (values_type == 'q')
-                    ImPlot::PlotPieChart(label_ids, static_cast<const long long *>(values_from_pyarray), static_cast<int>(values_count), x, y, radius, label_fmt, angle0, flags);
-                // If we reach this point, the array type is not supported!
-                else
-                    throw std::runtime_error(std::string("Bad array type ('") + values_type + "') for param values");
-            };
-            auto PlotPieChart_adapt_c_string_list_no_count = [&PlotPieChart_adapt_c_buffers](const std::vector<std::string> & label_ids, const nb::ndarray<> & values, double x, double y, double radius, const char * label_fmt = "%.1f", double angle0 = 90, ImPlotPieChartFlags flags = 0)
-            {
-                std::vector<const char *> label_ids_ptrs;
-                label_ids_ptrs.reserve(label_ids.size());
-                for (const auto& v: label_ids)
-                    label_ids_ptrs.push_back(v.c_str());
-
-                PlotPieChart_adapt_c_buffers(label_ids_ptrs.data(), values, x, y, radius, label_fmt, angle0, flags);
-            };
-
-            PlotPieChart_adapt_c_string_list_no_count(label_ids, values, x, y, radius, label_fmt, angle0, flags);
-        },     nb::arg("label_ids"), nb::arg("values"), nb::arg("x"), nb::arg("y"), nb::arg("radius"), nb::arg("label_fmt") = "%.1f", nb::arg("angle0") = 90, nb::arg("flags") = 0);
-
-    m.def("plot_histogram",
-        [](const char * label_id, const nb::ndarray<> & values, int bins = ImPlotBin_Sturges, double bar_scale = 1.0, const std::optional<const ImPlotRange> & range = std::nullopt, ImPlotHistogramFlags flags = 0) -> double
-        {
-            auto PlotHistogram_adapt_c_buffers = [](const char * label_id, const nb::ndarray<> & values, int bins = ImPlotBin_Sturges, double bar_scale = 1.0, ImPlotRange range = ImPlotRange(), ImPlotHistogramFlags flags = 0) -> double
-            {
-                // Check if the array is 1D and C-contiguous
-                if (! (values.ndim() == 1 && values.stride(0) == 1))
-                    throw std::runtime_error("The array must be 1D and contiguous");
-
-                // convert nb::ndarray to C standard buffer (const)
-                const void * values_from_pyarray = values.data();
-                size_t values_count = values.shape(0);
-
-                using np_uint_l = uint64_t;
-                using np_int_l = int64_t;
-
-                // Define a lambda to compute the letter code for the buffer type
-                auto _nanobind_buffer_type_to_letter_code = [](uint8_t dtype_code, size_t sizeof_item)  -> char
-                {
-                    #define DCODE(T) static_cast<uint8_t>(nb::dlpack::dtype_code::T)
-                        const std::array<std::tuple<uint8_t, size_t, char>, 11> mappings = {{
-                            {DCODE(UInt), 1, 'B'}, {DCODE(UInt), 2, 'H'}, {DCODE(UInt), 4, 'I'}, {DCODE(UInt), 8, 'L'},
-                            {DCODE(Int), 1, 'b'}, {DCODE(Int), 2, 'h'}, {DCODE(Int), 4, 'i'}, {DCODE(Int), 8, 'l'},
-                            {DCODE(Float), 4, 'f'}, {DCODE(Float), 8, 'd'}, {DCODE(Float), 16, 'g'}
-                        }};
-                    #undef DCODE
-                    for (const auto& [code_val, size, letter] : mappings)
-                        if (code_val == dtype_code && size == sizeof_item)
-                            return letter;
-                    throw std::runtime_error("Unsupported dtype");
-                };
-
-                // Compute the letter code for the buffer type
-                uint8_t dtype_code_values = values.dtype().code;
-                size_t sizeof_item_values = values.dtype().bits / 8;
-                char values_type = _nanobind_buffer_type_to_letter_code(dtype_code_values, sizeof_item_values);
-
-                // call the correct template version by casting
-                if (values_type == 'B')
-                    return ImPlot::PlotHistogram(label_id, static_cast<const uint8_t *>(values_from_pyarray), static_cast<int>(values_count), bins, bar_scale, range, flags);
-                else if (values_type == 'b')
-                    return ImPlot::PlotHistogram(label_id, static_cast<const int8_t *>(values_from_pyarray), static_cast<int>(values_count), bins, bar_scale, range, flags);
-                else if (values_type == 'H')
-                    return ImPlot::PlotHistogram(label_id, static_cast<const uint16_t *>(values_from_pyarray), static_cast<int>(values_count), bins, bar_scale, range, flags);
-                else if (values_type == 'h')
-                    return ImPlot::PlotHistogram(label_id, static_cast<const int16_t *>(values_from_pyarray), static_cast<int>(values_count), bins, bar_scale, range, flags);
-                else if (values_type == 'I')
-                    return ImPlot::PlotHistogram(label_id, static_cast<const uint32_t *>(values_from_pyarray), static_cast<int>(values_count), bins, bar_scale, range, flags);
-                else if (values_type == 'i')
-                    return ImPlot::PlotHistogram(label_id, static_cast<const int32_t *>(values_from_pyarray), static_cast<int>(values_count), bins, bar_scale, range, flags);
-                else if (values_type == 'L')
-                    return ImPlot::PlotHistogram(label_id, static_cast<const np_uint_l *>(values_from_pyarray), static_cast<int>(values_count), bins, bar_scale, range, flags);
-                else if (values_type == 'l')
-                    return ImPlot::PlotHistogram(label_id, static_cast<const np_int_l *>(values_from_pyarray), static_cast<int>(values_count), bins, bar_scale, range, flags);
-                else if (values_type == 'f')
-                    return ImPlot::PlotHistogram(label_id, static_cast<const float *>(values_from_pyarray), static_cast<int>(values_count), bins, bar_scale, range, flags);
-                else if (values_type == 'd')
-                    return ImPlot::PlotHistogram(label_id, static_cast<const double *>(values_from_pyarray), static_cast<int>(values_count), bins, bar_scale, range, flags);
-                else if (values_type == 'g')
-                    return ImPlot::PlotHistogram(label_id, static_cast<const long double *>(values_from_pyarray), static_cast<int>(values_count), bins, bar_scale, range, flags);
-                else if (values_type == 'q')
-                    return ImPlot::PlotHistogram(label_id, static_cast<const long long *>(values_from_pyarray), static_cast<int>(values_count), bins, bar_scale, range, flags);
-                // If we reach this point, the array type is not supported!
-                else
-                    throw std::runtime_error(std::string("Bad array type ('") + values_type + "') for param values");
-            };
-            auto PlotHistogram_adapt_mutable_param_with_default_value = [&PlotHistogram_adapt_c_buffers](const char * label_id, const nb::ndarray<> & values, int bins = ImPlotBin_Sturges, double bar_scale = 1.0, const std::optional<const ImPlotRange> & range = std::nullopt, ImPlotHistogramFlags flags = 0) -> double
-            {
-
-                const ImPlotRange& range_or_default = [&]() -> const ImPlotRange {
-                    if (range.has_value())
-                        return range.value();
-                    else
-                        return ImPlotRange();
-                }();
-
-                auto lambda_result = PlotHistogram_adapt_c_buffers(label_id, values, bins, bar_scale, range_or_default, flags);
-                return lambda_result;
-            };
-
-            return PlotHistogram_adapt_mutable_param_with_default_value(label_id, values, bins, bar_scale, range, flags);
-        },
-        nb::arg("label_id"), nb::arg("values"), nb::arg("bins") = ImPlotBin_Sturges, nb::arg("bar_scale") = 1.0, nb::arg("range") = nb::none(), nb::arg("flags") = 0,
-        " Plots a horizontal histogram. #bins can be a positive integer or an ImPlotBin_ method. If #range is left unspecified, the min/max of #values will be used as the range.\n Otherwise, outlier values outside of the range are not binned. The largest bin count or density is returned.\n---\nPython bindings defaults:\n    If range is None, then its default value will be: Range()");
-
-    m.def("plot_histogram_2d",
-        [](const char * label_id, const nb::ndarray<> & xs, const nb::ndarray<> & ys, int x_bins = ImPlotBin_Sturges, int y_bins = ImPlotBin_Sturges, const std::optional<const ImPlotRect> & range = std::nullopt, ImPlotHistogramFlags flags = 0) -> double
-        {
-            auto PlotHistogram2D_adapt_c_buffers = [](const char * label_id, const nb::ndarray<> & xs, const nb::ndarray<> & ys, int x_bins = ImPlotBin_Sturges, int y_bins = ImPlotBin_Sturges, ImPlotRect range = ImPlotRect(), ImPlotHistogramFlags flags = 0) -> double
-            {
-                // Check if the array is 1D and C-contiguous
-                if (! (xs.ndim() == 1 && xs.stride(0) == 1))
-                    throw std::runtime_error("The array must be 1D and contiguous");
-
-                // convert nb::ndarray to C standard buffer (const)
-                const void * xs_from_pyarray = xs.data();
-                size_t xs_count = xs.shape(0);
-
-                // Check if the array is 1D and C-contiguous
-                if (! (ys.ndim() == 1 && ys.stride(0) == 1))
-                    throw std::runtime_error("The array must be 1D and contiguous");
-
-                // convert nb::ndarray to C standard buffer (const)
-                const void * ys_from_pyarray = ys.data();
-                size_t ys_count = ys.shape(0);
-
-                using np_uint_l = uint64_t;
-                using np_int_l = int64_t;
-
-                // Define a lambda to compute the letter code for the buffer type
-                auto _nanobind_buffer_type_to_letter_code = [](uint8_t dtype_code, size_t sizeof_item)  -> char
-                {
-                    #define DCODE(T) static_cast<uint8_t>(nb::dlpack::dtype_code::T)
-                        const std::array<std::tuple<uint8_t, size_t, char>, 11> mappings = {{
-                            {DCODE(UInt), 1, 'B'}, {DCODE(UInt), 2, 'H'}, {DCODE(UInt), 4, 'I'}, {DCODE(UInt), 8, 'L'},
-                            {DCODE(Int), 1, 'b'}, {DCODE(Int), 2, 'h'}, {DCODE(Int), 4, 'i'}, {DCODE(Int), 8, 'l'},
-                            {DCODE(Float), 4, 'f'}, {DCODE(Float), 8, 'd'}, {DCODE(Float), 16, 'g'}
-                        }};
-                    #undef DCODE
-                    for (const auto& [code_val, size, letter] : mappings)
-                        if (code_val == dtype_code && size == sizeof_item)
-                            return letter;
-                    throw std::runtime_error("Unsupported dtype");
-                };
-
-                // Compute the letter code for the buffer type
-                uint8_t dtype_code_ys = ys.dtype().code;
-                size_t sizeof_item_ys = ys.dtype().bits / 8;
-                char ys_type = _nanobind_buffer_type_to_letter_code(dtype_code_ys, sizeof_item_ys);
-
-                // call the correct template version by casting
-                if (ys_type == 'B')
-                    return ImPlot::PlotHistogram2D(label_id, static_cast<const uint8_t *>(xs_from_pyarray), static_cast<const uint8_t *>(ys_from_pyarray), static_cast<int>(ys_count), x_bins, y_bins, range, flags);
-                else if (ys_type == 'b')
-                    return ImPlot::PlotHistogram2D(label_id, static_cast<const int8_t *>(xs_from_pyarray), static_cast<const int8_t *>(ys_from_pyarray), static_cast<int>(ys_count), x_bins, y_bins, range, flags);
-                else if (ys_type == 'H')
-                    return ImPlot::PlotHistogram2D(label_id, static_cast<const uint16_t *>(xs_from_pyarray), static_cast<const uint16_t *>(ys_from_pyarray), static_cast<int>(ys_count), x_bins, y_bins, range, flags);
-                else if (ys_type == 'h')
-                    return ImPlot::PlotHistogram2D(label_id, static_cast<const int16_t *>(xs_from_pyarray), static_cast<const int16_t *>(ys_from_pyarray), static_cast<int>(ys_count), x_bins, y_bins, range, flags);
-                else if (ys_type == 'I')
-                    return ImPlot::PlotHistogram2D(label_id, static_cast<const uint32_t *>(xs_from_pyarray), static_cast<const uint32_t *>(ys_from_pyarray), static_cast<int>(ys_count), x_bins, y_bins, range, flags);
-                else if (ys_type == 'i')
-                    return ImPlot::PlotHistogram2D(label_id, static_cast<const int32_t *>(xs_from_pyarray), static_cast<const int32_t *>(ys_from_pyarray), static_cast<int>(ys_count), x_bins, y_bins, range, flags);
-                else if (ys_type == 'L')
-                    return ImPlot::PlotHistogram2D(label_id, static_cast<const np_uint_l *>(xs_from_pyarray), static_cast<const np_uint_l *>(ys_from_pyarray), static_cast<int>(ys_count), x_bins, y_bins, range, flags);
-                else if (ys_type == 'l')
-                    return ImPlot::PlotHistogram2D(label_id, static_cast<const np_int_l *>(xs_from_pyarray), static_cast<const np_int_l *>(ys_from_pyarray), static_cast<int>(ys_count), x_bins, y_bins, range, flags);
-                else if (ys_type == 'f')
-                    return ImPlot::PlotHistogram2D(label_id, static_cast<const float *>(xs_from_pyarray), static_cast<const float *>(ys_from_pyarray), static_cast<int>(ys_count), x_bins, y_bins, range, flags);
-                else if (ys_type == 'd')
-                    return ImPlot::PlotHistogram2D(label_id, static_cast<const double *>(xs_from_pyarray), static_cast<const double *>(ys_from_pyarray), static_cast<int>(ys_count), x_bins, y_bins, range, flags);
-                else if (ys_type == 'g')
-                    return ImPlot::PlotHistogram2D(label_id, static_cast<const long double *>(xs_from_pyarray), static_cast<const long double *>(ys_from_pyarray), static_cast<int>(ys_count), x_bins, y_bins, range, flags);
-                else if (ys_type == 'q')
-                    return ImPlot::PlotHistogram2D(label_id, static_cast<const long long *>(xs_from_pyarray), static_cast<const long long *>(ys_from_pyarray), static_cast<int>(ys_count), x_bins, y_bins, range, flags);
-                // If we reach this point, the array type is not supported!
-                else
-                    throw std::runtime_error(std::string("Bad array type ('") + ys_type + "') for param ys");
-            };
-            auto PlotHistogram2D_adapt_mutable_param_with_default_value = [&PlotHistogram2D_adapt_c_buffers](const char * label_id, const nb::ndarray<> & xs, const nb::ndarray<> & ys, int x_bins = ImPlotBin_Sturges, int y_bins = ImPlotBin_Sturges, const std::optional<const ImPlotRect> & range = std::nullopt, ImPlotHistogramFlags flags = 0) -> double
-            {
-
-                const ImPlotRect& range_or_default = [&]() -> const ImPlotRect {
-                    if (range.has_value())
-                        return range.value();
-                    else
-                        return ImPlotRect();
-                }();
-
-                auto lambda_result = PlotHistogram2D_adapt_c_buffers(label_id, xs, ys, x_bins, y_bins, range_or_default, flags);
-                return lambda_result;
-            };
-
-            return PlotHistogram2D_adapt_mutable_param_with_default_value(label_id, xs, ys, x_bins, y_bins, range, flags);
-        },
-        nb::arg("label_id"), nb::arg("xs"), nb::arg("ys"), nb::arg("x_bins") = ImPlotBin_Sturges, nb::arg("y_bins") = ImPlotBin_Sturges, nb::arg("range") = nb::none(), nb::arg("flags") = 0,
-        " Plots two dimensional, bivariate histogram as a heatmap. #x_bins and #y_bins can be a positive integer or an ImPlotBin. If #range is left unspecified, the min/max of\n #xs an #ys will be used as the ranges. Otherwise, outlier values outside of range are not binned. The largest bin count or density is returned.\n---\nPython bindings defaults:\n    If range is None, then its default value will be: Rect()");
-
-    m.def("plot_digital",
-        [](const char * label_id, const nb::ndarray<> & xs, const nb::ndarray<> & ys, ImPlotDigitalFlags flags = 0, int offset = 0)
-        {
-            auto PlotDigital_adapt_c_buffers = [](const char * label_id, const nb::ndarray<> & xs, const nb::ndarray<> & ys, ImPlotDigitalFlags flags = 0, int offset = 0, int stride = -1)
-            {
-                // Check if the array is 1D and C-contiguous
-                if (! (xs.ndim() == 1 && xs.stride(0) == 1))
-                    throw std::runtime_error("The array must be 1D and contiguous");
-
-                // convert nb::ndarray to C standard buffer (const)
-                const void * xs_from_pyarray = xs.data();
-                size_t xs_count = xs.shape(0);
-
-                // Check if the array is 1D and C-contiguous
-                if (! (ys.ndim() == 1 && ys.stride(0) == 1))
-                    throw std::runtime_error("The array must be 1D and contiguous");
-
-                // convert nb::ndarray to C standard buffer (const)
-                const void * ys_from_pyarray = ys.data();
-                size_t ys_count = ys.shape(0);
-
-                // process stride default value (which was a sizeof in C++)
-                int ys_stride = stride;
-                if (ys_stride == -1)
-                    ys_stride = (int)ys.itemsize();
-
-                using np_uint_l = uint64_t;
-                using np_int_l = int64_t;
-
-                // Define a lambda to compute the letter code for the buffer type
-                auto _nanobind_buffer_type_to_letter_code = [](uint8_t dtype_code, size_t sizeof_item)  -> char
-                {
-                    #define DCODE(T) static_cast<uint8_t>(nb::dlpack::dtype_code::T)
-                        const std::array<std::tuple<uint8_t, size_t, char>, 11> mappings = {{
-                            {DCODE(UInt), 1, 'B'}, {DCODE(UInt), 2, 'H'}, {DCODE(UInt), 4, 'I'}, {DCODE(UInt), 8, 'L'},
-                            {DCODE(Int), 1, 'b'}, {DCODE(Int), 2, 'h'}, {DCODE(Int), 4, 'i'}, {DCODE(Int), 8, 'l'},
-                            {DCODE(Float), 4, 'f'}, {DCODE(Float), 8, 'd'}, {DCODE(Float), 16, 'g'}
-                        }};
-                    #undef DCODE
-                    for (const auto& [code_val, size, letter] : mappings)
-                        if (code_val == dtype_code && size == sizeof_item)
-                            return letter;
-                    throw std::runtime_error("Unsupported dtype");
-                };
-
-                // Compute the letter code for the buffer type
-                uint8_t dtype_code_ys = ys.dtype().code;
-                size_t sizeof_item_ys = ys.dtype().bits / 8;
-                char ys_type = _nanobind_buffer_type_to_letter_code(dtype_code_ys, sizeof_item_ys);
-
-                // call the correct template version by casting
-                if (ys_type == 'B')
-                    ImPlot::PlotDigital(label_id, static_cast<const uint8_t *>(xs_from_pyarray), static_cast<const uint8_t *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
-                else if (ys_type == 'b')
-                    ImPlot::PlotDigital(label_id, static_cast<const int8_t *>(xs_from_pyarray), static_cast<const int8_t *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
-                else if (ys_type == 'H')
-                    ImPlot::PlotDigital(label_id, static_cast<const uint16_t *>(xs_from_pyarray), static_cast<const uint16_t *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
-                else if (ys_type == 'h')
-                    ImPlot::PlotDigital(label_id, static_cast<const int16_t *>(xs_from_pyarray), static_cast<const int16_t *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
-                else if (ys_type == 'I')
-                    ImPlot::PlotDigital(label_id, static_cast<const uint32_t *>(xs_from_pyarray), static_cast<const uint32_t *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
-                else if (ys_type == 'i')
-                    ImPlot::PlotDigital(label_id, static_cast<const int32_t *>(xs_from_pyarray), static_cast<const int32_t *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
-                else if (ys_type == 'L')
-                    ImPlot::PlotDigital(label_id, static_cast<const np_uint_l *>(xs_from_pyarray), static_cast<const np_uint_l *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
-                else if (ys_type == 'l')
-                    ImPlot::PlotDigital(label_id, static_cast<const np_int_l *>(xs_from_pyarray), static_cast<const np_int_l *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
-                else if (ys_type == 'f')
-                    ImPlot::PlotDigital(label_id, static_cast<const float *>(xs_from_pyarray), static_cast<const float *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
-                else if (ys_type == 'd')
-                    ImPlot::PlotDigital(label_id, static_cast<const double *>(xs_from_pyarray), static_cast<const double *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
-                else if (ys_type == 'g')
-                    ImPlot::PlotDigital(label_id, static_cast<const long double *>(xs_from_pyarray), static_cast<const long double *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
-                else if (ys_type == 'q')
-                    ImPlot::PlotDigital(label_id, static_cast<const long long *>(xs_from_pyarray), static_cast<const long long *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
-                // If we reach this point, the array type is not supported!
-                else
-                    throw std::runtime_error(std::string("Bad array type ('") + ys_type + "') for param ys");
-            };
-            auto PlotDigital_adapt_exclude_params = [&PlotDigital_adapt_c_buffers](const char * label_id, const nb::ndarray<> & xs, const nb::ndarray<> & ys, ImPlotDigitalFlags flags = 0, int offset = 0)
-            {
-                PlotDigital_adapt_c_buffers(label_id, xs, ys, flags, offset, -1);
-            };
-
-            PlotDigital_adapt_exclude_params(label_id, xs, ys, flags, offset);
-        },     nb::arg("label_id"), nb::arg("xs"), nb::arg("ys"), nb::arg("flags") = 0, nb::arg("offset") = 0);
-
-    m.def("plot_image",
-        [](const char * label_id, ImTextureID user_texture_id, const ImPlotPoint & bounds_min, const ImPlotPoint & bounds_max, const std::optional<const ImVec2> & uv0 = std::nullopt, const std::optional<const ImVec2> & uv1 = std::nullopt, const std::optional<const ImVec4> & tint_col = std::nullopt, ImPlotImageFlags flags = 0)
-        {
-            auto PlotImage_adapt_mutable_param_with_default_value = [](const char * label_id, ImTextureID user_texture_id, const ImPlotPoint & bounds_min, const ImPlotPoint & bounds_max, const std::optional<const ImVec2> & uv0 = std::nullopt, const std::optional<const ImVec2> & uv1 = std::nullopt, const std::optional<const ImVec4> & tint_col = std::nullopt, ImPlotImageFlags flags = 0)
-            {
-
-                const ImVec2& uv0_or_default = [&]() -> const ImVec2 {
-                    if (uv0.has_value())
-                        return uv0.value();
-                    else
-                        return ImVec2(0,0);
-                }();
-
-                const ImVec2& uv1_or_default = [&]() -> const ImVec2 {
-                    if (uv1.has_value())
-                        return uv1.value();
-                    else
-                        return ImVec2(1,1);
-                }();
-
-                const ImVec4& tint_col_or_default = [&]() -> const ImVec4 {
-                    if (tint_col.has_value())
-                        return tint_col.value();
-                    else
-                        return ImVec4(1,1,1,1);
-                }();
-
-                ImPlot::PlotImage(label_id, user_texture_id, bounds_min, bounds_max, uv0_or_default, uv1_or_default, tint_col_or_default, flags);
-            };
-
-            PlotImage_adapt_mutable_param_with_default_value(label_id, user_texture_id, bounds_min, bounds_max, uv0, uv1, tint_col, flags);
-        },
-        nb::arg("label_id"), nb::arg("user_texture_id"), nb::arg("bounds_min"), nb::arg("bounds_max"), nb::arg("uv0") = nb::none(), nb::arg("uv1") = nb::none(), nb::arg("tint_col") = nb::none(), nb::arg("flags") = 0,
-        " Plots an axis-aligned image. #bounds_min/bounds_max are in plot coordinates (y-up) and #uv0/uv1 are in texture coordinates (y-down).\n---\nPython bindings defaults:\n    If any of the params below is None, then its default value below will be used:\n        uv0: ImVec2(0,0)\n        uv1: ImVec2(1,1)\n        tint_col: ImVec4(1,1,1,1)");
-
-    m.def("plot_text",
-        [](const char * text, double x, double y, const std::optional<const ImVec2> & pix_offset = std::nullopt, ImPlotTextFlags flags = 0)
-        {
-            auto PlotText_adapt_mutable_param_with_default_value = [](const char * text, double x, double y, const std::optional<const ImVec2> & pix_offset = std::nullopt, ImPlotTextFlags flags = 0)
-            {
-
-                const ImVec2& pix_offset_or_default = [&]() -> const ImVec2 {
-                    if (pix_offset.has_value())
-                        return pix_offset.value();
-                    else
-                        return ImVec2(0,0);
-                }();
-
-                ImPlot::PlotText(text, x, y, pix_offset_or_default, flags);
-            };
-
-            PlotText_adapt_mutable_param_with_default_value(text, x, y, pix_offset, flags);
-        },
-        nb::arg("text"), nb::arg("x"), nb::arg("y"), nb::arg("pix_offset") = nb::none(), nb::arg("flags") = 0,
-        " Plots a centered text label at point x,y with an optional pixel offset. Text color can be changed with ImPlot::PushStyleColor(ImPlotCol_InlayText, ...).\n---\nPython bindings defaults:\n    If pix_offset is None, then its default value will be: ImVec2(0,0)");
-
-    m.def("plot_dummy",
-        ImPlot::PlotDummy,
-        nb::arg("label_id"), nb::arg("flags") = 0,
-        "Plots a dummy item (i.e. adds a legend entry colored by ImPlotCol_Line)");
-
-    m.def("drag_point",
-        [](int id, double x, double y, const ImVec4 & col, float size = 4, ImPlotDragToolFlags flags = 0, std::optional<bool> out_clicked = std::nullopt, std::optional<bool> out_hovered = std::nullopt, std::optional<bool> held = std::nullopt) -> std::tuple<bool, double, double, std::optional<bool>, std::optional<bool>, std::optional<bool>>
-        {
-            auto DragPoint_adapt_modifiable_immutable_to_return = [](int id, double x, double y, const ImVec4 & col, float size = 4, ImPlotDragToolFlags flags = 0, std::optional<bool> out_clicked = std::nullopt, std::optional<bool> out_hovered = std::nullopt, std::optional<bool> held = std::nullopt) -> std::tuple<bool, double, double, std::optional<bool>, std::optional<bool>, std::optional<bool>>
-            {
-                double * x_adapt_modifiable = & x;
-                double * y_adapt_modifiable = & y;
-                bool * out_clicked_adapt_modifiable = nullptr;
-                if (out_clicked.has_value())
-                    out_clicked_adapt_modifiable = & (*out_clicked);
-                bool * out_hovered_adapt_modifiable = nullptr;
-                if (out_hovered.has_value())
-                    out_hovered_adapt_modifiable = & (*out_hovered);
-                bool * held_adapt_modifiable = nullptr;
-                if (held.has_value())
-                    held_adapt_modifiable = & (*held);
-
-                bool r = ImPlot::DragPoint(id, x_adapt_modifiable, y_adapt_modifiable, col, size, flags, out_clicked_adapt_modifiable, out_hovered_adapt_modifiable, held_adapt_modifiable);
-                return std::make_tuple(r, x, y, out_clicked, out_hovered, held);
-            };
-
-            return DragPoint_adapt_modifiable_immutable_to_return(id, x, y, col, size, flags, out_clicked, out_hovered, held);
-        },
-        nb::arg("id_"), nb::arg("x"), nb::arg("y"), nb::arg("col"), nb::arg("size") = 4, nb::arg("flags") = 0, nb::arg("out_clicked") = nb::none(), nb::arg("out_hovered") = nb::none(), nb::arg("held") = nb::none(),
-        "Shows a draggable point at x,y. #col defaults to ImGuiCol_Text.");
-
-    m.def("drag_line_x",
-        [](int id, double x, const ImVec4 & col, float thickness = 1, ImPlotDragToolFlags flags = 0, std::optional<bool> out_clicked = std::nullopt, std::optional<bool> out_hovered = std::nullopt, std::optional<bool> held = std::nullopt) -> std::tuple<bool, double, std::optional<bool>, std::optional<bool>, std::optional<bool>>
-        {
-            auto DragLineX_adapt_modifiable_immutable_to_return = [](int id, double x, const ImVec4 & col, float thickness = 1, ImPlotDragToolFlags flags = 0, std::optional<bool> out_clicked = std::nullopt, std::optional<bool> out_hovered = std::nullopt, std::optional<bool> held = std::nullopt) -> std::tuple<bool, double, std::optional<bool>, std::optional<bool>, std::optional<bool>>
-            {
-                double * x_adapt_modifiable = & x;
-                bool * out_clicked_adapt_modifiable = nullptr;
-                if (out_clicked.has_value())
-                    out_clicked_adapt_modifiable = & (*out_clicked);
-                bool * out_hovered_adapt_modifiable = nullptr;
-                if (out_hovered.has_value())
-                    out_hovered_adapt_modifiable = & (*out_hovered);
-                bool * held_adapt_modifiable = nullptr;
-                if (held.has_value())
-                    held_adapt_modifiable = & (*held);
-
-                bool r = ImPlot::DragLineX(id, x_adapt_modifiable, col, thickness, flags, out_clicked_adapt_modifiable, out_hovered_adapt_modifiable, held_adapt_modifiable);
-                return std::make_tuple(r, x, out_clicked, out_hovered, held);
-            };
-
-            return DragLineX_adapt_modifiable_immutable_to_return(id, x, col, thickness, flags, out_clicked, out_hovered, held);
-        },
-        nb::arg("id_"), nb::arg("x"), nb::arg("col"), nb::arg("thickness") = 1, nb::arg("flags") = 0, nb::arg("out_clicked") = nb::none(), nb::arg("out_hovered") = nb::none(), nb::arg("held") = nb::none(),
-        "Shows a draggable vertical guide line at an x-value. #col defaults to ImGuiCol_Text.");
-
-    m.def("drag_line_y",
-        [](int id, double y, const ImVec4 & col, float thickness = 1, ImPlotDragToolFlags flags = 0, std::optional<bool> out_clicked = std::nullopt, std::optional<bool> out_hovered = std::nullopt, std::optional<bool> held = std::nullopt) -> std::tuple<bool, double, std::optional<bool>, std::optional<bool>, std::optional<bool>>
-        {
-            auto DragLineY_adapt_modifiable_immutable_to_return = [](int id, double y, const ImVec4 & col, float thickness = 1, ImPlotDragToolFlags flags = 0, std::optional<bool> out_clicked = std::nullopt, std::optional<bool> out_hovered = std::nullopt, std::optional<bool> held = std::nullopt) -> std::tuple<bool, double, std::optional<bool>, std::optional<bool>, std::optional<bool>>
-            {
-                double * y_adapt_modifiable = & y;
-                bool * out_clicked_adapt_modifiable = nullptr;
-                if (out_clicked.has_value())
-                    out_clicked_adapt_modifiable = & (*out_clicked);
-                bool * out_hovered_adapt_modifiable = nullptr;
-                if (out_hovered.has_value())
-                    out_hovered_adapt_modifiable = & (*out_hovered);
-                bool * held_adapt_modifiable = nullptr;
-                if (held.has_value())
-                    held_adapt_modifiable = & (*held);
-
-                bool r = ImPlot::DragLineY(id, y_adapt_modifiable, col, thickness, flags, out_clicked_adapt_modifiable, out_hovered_adapt_modifiable, held_adapt_modifiable);
-                return std::make_tuple(r, y, out_clicked, out_hovered, held);
-            };
-
-            return DragLineY_adapt_modifiable_immutable_to_return(id, y, col, thickness, flags, out_clicked, out_hovered, held);
-        },
-        nb::arg("id_"), nb::arg("y"), nb::arg("col"), nb::arg("thickness") = 1, nb::arg("flags") = 0, nb::arg("out_clicked") = nb::none(), nb::arg("out_hovered") = nb::none(), nb::arg("held") = nb::none(),
-        "Shows a draggable horizontal guide line at a y-value. #col defaults to ImGuiCol_Text.");
-
-    m.def("drag_rect",
-        [](int id, double x1, double y1, double x2, double y2, const ImVec4 & col, ImPlotDragToolFlags flags = 0, std::optional<bool> out_clicked = std::nullopt, std::optional<bool> out_hovered = std::nullopt, std::optional<bool> held = std::nullopt) -> std::tuple<bool, double, double, double, double, std::optional<bool>, std::optional<bool>, std::optional<bool>>
-        {
-            auto DragRect_adapt_modifiable_immutable_to_return = [](int id, double x1, double y1, double x2, double y2, const ImVec4 & col, ImPlotDragToolFlags flags = 0, std::optional<bool> out_clicked = std::nullopt, std::optional<bool> out_hovered = std::nullopt, std::optional<bool> held = std::nullopt) -> std::tuple<bool, double, double, double, double, std::optional<bool>, std::optional<bool>, std::optional<bool>>
-            {
-                double * x1_adapt_modifiable = & x1;
-                double * y1_adapt_modifiable = & y1;
-                double * x2_adapt_modifiable = & x2;
-                double * y2_adapt_modifiable = & y2;
-                bool * out_clicked_adapt_modifiable = nullptr;
-                if (out_clicked.has_value())
-                    out_clicked_adapt_modifiable = & (*out_clicked);
-                bool * out_hovered_adapt_modifiable = nullptr;
-                if (out_hovered.has_value())
-                    out_hovered_adapt_modifiable = & (*out_hovered);
-                bool * held_adapt_modifiable = nullptr;
-                if (held.has_value())
-                    held_adapt_modifiable = & (*held);
-
-                bool r = ImPlot::DragRect(id, x1_adapt_modifiable, y1_adapt_modifiable, x2_adapt_modifiable, y2_adapt_modifiable, col, flags, out_clicked_adapt_modifiable, out_hovered_adapt_modifiable, held_adapt_modifiable);
-                return std::make_tuple(r, x1, y1, x2, y2, out_clicked, out_hovered, held);
-            };
-
-            return DragRect_adapt_modifiable_immutable_to_return(id, x1, y1, x2, y2, col, flags, out_clicked, out_hovered, held);
-        },
-        nb::arg("id_"), nb::arg("x1"), nb::arg("y1"), nb::arg("x2"), nb::arg("y2"), nb::arg("col"), nb::arg("flags") = 0, nb::arg("out_clicked") = nb::none(), nb::arg("out_hovered") = nb::none(), nb::arg("held") = nb::none(),
-        "Shows a draggable and resizeable rectangle.");
-
-    m.def("annotation",
-        nb::overload_cast<double, double, const ImVec4 &, const ImVec2 &, bool, bool>(ImPlot::Annotation), nb::arg("x"), nb::arg("y"), nb::arg("col"), nb::arg("pix_offset"), nb::arg("clamp"), nb::arg("round") = false);
-
-    m.def("annotation",
-        [](double x, double y, const ImVec4 & col, const ImVec2 & pix_offset, bool clamp, const char * fmt)
-        {
-            auto Annotation_adapt_variadic_format = [](double x, double y, const ImVec4 & col, const ImVec2 & pix_offset, bool clamp, const char * fmt)
-            {
-                ImPlot::Annotation(x, y, col, pix_offset, clamp, "%s", fmt);
-            };
-
-            Annotation_adapt_variadic_format(x, y, col, pix_offset, clamp, fmt);
-        },     nb::arg("x"), nb::arg("y"), nb::arg("col"), nb::arg("pix_offset"), nb::arg("clamp"), nb::arg("fmt"));
-
-    m.def("tag_x",
-        nb::overload_cast<double, const ImVec4 &, bool>(ImPlot::TagX), nb::arg("x"), nb::arg("col"), nb::arg("round") = false);
-
-    m.def("tag_x",
-        [](double x, const ImVec4 & col, const char * fmt)
-        {
-            auto TagX_adapt_variadic_format = [](double x, const ImVec4 & col, const char * fmt)
-            {
-                ImPlot::TagX(x, col, "%s", fmt);
-            };
-
-            TagX_adapt_variadic_format(x, col, fmt);
-        },     nb::arg("x"), nb::arg("col"), nb::arg("fmt"));
-
-    m.def("tag_y",
-        nb::overload_cast<double, const ImVec4 &, bool>(ImPlot::TagY), nb::arg("y"), nb::arg("col"), nb::arg("round") = false);
-
-    m.def("tag_y",
-        [](double y, const ImVec4 & col, const char * fmt)
-        {
-            auto TagY_adapt_variadic_format = [](double y, const ImVec4 & col, const char * fmt)
-            {
-                ImPlot::TagY(y, col, "%s", fmt);
-            };
-
-            TagY_adapt_variadic_format(y, col, fmt);
-        },     nb::arg("y"), nb::arg("col"), nb::arg("fmt"));
-
-    m.def("set_axis",
-        ImPlot::SetAxis, nb::arg("axis"));
-
-    m.def("set_axes",
-        ImPlot::SetAxes, nb::arg("x_axis"), nb::arg("y_axis"));
-
-    m.def("pixels_to_plot",
-        [](const ImVec2 & pix, const std::optional<const ImAxis> & x_axis = std::nullopt, const std::optional<const ImAxis> & y_axis = std::nullopt) -> ImPlotPoint
-        {
-            auto PixelsToPlot_adapt_mutable_param_with_default_value = [](const ImVec2 & pix, const std::optional<const ImAxis> & x_axis = std::nullopt, const std::optional<const ImAxis> & y_axis = std::nullopt) -> ImPlotPoint
-            {
-
-                const ImAxis& x_axis_or_default = [&]() -> const ImAxis {
-                    if (x_axis.has_value())
-                        return x_axis.value();
-                    else
-                        return IMPLOT_AUTO;
-                }();
-
-                const ImAxis& y_axis_or_default = [&]() -> const ImAxis {
-                    if (y_axis.has_value())
-                        return y_axis.value();
-                    else
-                        return IMPLOT_AUTO;
-                }();
-
-                auto lambda_result = ImPlot::PixelsToPlot(pix, x_axis_or_default, y_axis_or_default);
-                return lambda_result;
-            };
-
-            return PixelsToPlot_adapt_mutable_param_with_default_value(pix, x_axis, y_axis);
-        },
-        nb::arg("pix"), nb::arg("x_axis") = nb::none(), nb::arg("y_axis") = nb::none(),
-        "---\nPython bindings defaults:\n    If any of the params below is None, then its default value below will be used:\n        x_axis: IMPLOT_AUTO\n        y_axis: IMPLOT_AUTO");
-
-    m.def("pixels_to_plot",
-        [](float x, float y, const std::optional<const ImAxis> & x_axis = std::nullopt, const std::optional<const ImAxis> & y_axis = std::nullopt) -> ImPlotPoint
-        {
-            auto PixelsToPlot_adapt_mutable_param_with_default_value = [](float x, float y, const std::optional<const ImAxis> & x_axis = std::nullopt, const std::optional<const ImAxis> & y_axis = std::nullopt) -> ImPlotPoint
-            {
-
-                const ImAxis& x_axis_or_default = [&]() -> const ImAxis {
-                    if (x_axis.has_value())
-                        return x_axis.value();
-                    else
-                        return IMPLOT_AUTO;
-                }();
-
-                const ImAxis& y_axis_or_default = [&]() -> const ImAxis {
-                    if (y_axis.has_value())
-                        return y_axis.value();
-                    else
-                        return IMPLOT_AUTO;
-                }();
-
-                auto lambda_result = ImPlot::PixelsToPlot(x, y, x_axis_or_default, y_axis_or_default);
-                return lambda_result;
-            };
-
-            return PixelsToPlot_adapt_mutable_param_with_default_value(x, y, x_axis, y_axis);
-        },
-        nb::arg("x"), nb::arg("y"), nb::arg("x_axis") = nb::none(), nb::arg("y_axis") = nb::none(),
-        "---\nPython bindings defaults:\n    If any of the params below is None, then its default value below will be used:\n        x_axis: IMPLOT_AUTO\n        y_axis: IMPLOT_AUTO");
-
-    m.def("plot_to_pixels",
-        [](const ImPlotPoint & plt, const std::optional<const ImAxis> & x_axis = std::nullopt, const std::optional<const ImAxis> & y_axis = std::nullopt) -> ImVec2
-        {
-            auto PlotToPixels_adapt_mutable_param_with_default_value = [](const ImPlotPoint & plt, const std::optional<const ImAxis> & x_axis = std::nullopt, const std::optional<const ImAxis> & y_axis = std::nullopt) -> ImVec2
-            {
-
-                const ImAxis& x_axis_or_default = [&]() -> const ImAxis {
-                    if (x_axis.has_value())
-                        return x_axis.value();
-                    else
-                        return IMPLOT_AUTO;
-                }();
-
-                const ImAxis& y_axis_or_default = [&]() -> const ImAxis {
-                    if (y_axis.has_value())
-                        return y_axis.value();
-                    else
-                        return IMPLOT_AUTO;
-                }();
-
-                auto lambda_result = ImPlot::PlotToPixels(plt, x_axis_or_default, y_axis_or_default);
-                return lambda_result;
-            };
-
-            return PlotToPixels_adapt_mutable_param_with_default_value(plt, x_axis, y_axis);
-        },
-        nb::arg("plt"), nb::arg("x_axis") = nb::none(), nb::arg("y_axis") = nb::none(),
-        "---\nPython bindings defaults:\n    If any of the params below is None, then its default value below will be used:\n        x_axis: IMPLOT_AUTO\n        y_axis: IMPLOT_AUTO");
-
-    m.def("plot_to_pixels",
-        [](double x, double y, const std::optional<const ImAxis> & x_axis = std::nullopt, const std::optional<const ImAxis> & y_axis = std::nullopt) -> ImVec2
-        {
-            auto PlotToPixels_adapt_mutable_param_with_default_value = [](double x, double y, const std::optional<const ImAxis> & x_axis = std::nullopt, const std::optional<const ImAxis> & y_axis = std::nullopt) -> ImVec2
-            {
-
-                const ImAxis& x_axis_or_default = [&]() -> const ImAxis {
-                    if (x_axis.has_value())
-                        return x_axis.value();
-                    else
-                        return IMPLOT_AUTO;
-                }();
-
-                const ImAxis& y_axis_or_default = [&]() -> const ImAxis {
-                    if (y_axis.has_value())
-                        return y_axis.value();
-                    else
-                        return IMPLOT_AUTO;
-                }();
-
-                auto lambda_result = ImPlot::PlotToPixels(x, y, x_axis_or_default, y_axis_or_default);
-                return lambda_result;
-            };
-
-            return PlotToPixels_adapt_mutable_param_with_default_value(x, y, x_axis, y_axis);
-        },
-        nb::arg("x"), nb::arg("y"), nb::arg("x_axis") = nb::none(), nb::arg("y_axis") = nb::none(),
-        "---\nPython bindings defaults:\n    If any of the params below is None, then its default value below will be used:\n        x_axis: IMPLOT_AUTO\n        y_axis: IMPLOT_AUTO");
-
-    m.def("get_plot_pos",
-        ImPlot::GetPlotPos, "Get the current Plot position (top-left) in pixels.");
-
-    m.def("get_plot_size",
-        ImPlot::GetPlotSize, "Get the curent Plot size in pixels.");
-
-    m.def("get_plot_mouse_pos",
-        [](const std::optional<const ImAxis> & x_axis = std::nullopt, const std::optional<const ImAxis> & y_axis = std::nullopt) -> ImPlotPoint
-        {
-            auto GetPlotMousePos_adapt_mutable_param_with_default_value = [](const std::optional<const ImAxis> & x_axis = std::nullopt, const std::optional<const ImAxis> & y_axis = std::nullopt) -> ImPlotPoint
-            {
-
-                const ImAxis& x_axis_or_default = [&]() -> const ImAxis {
-                    if (x_axis.has_value())
-                        return x_axis.value();
-                    else
-                        return IMPLOT_AUTO;
-                }();
-
-                const ImAxis& y_axis_or_default = [&]() -> const ImAxis {
-                    if (y_axis.has_value())
-                        return y_axis.value();
-                    else
-                        return IMPLOT_AUTO;
-                }();
-
-                auto lambda_result = ImPlot::GetPlotMousePos(x_axis_or_default, y_axis_or_default);
-                return lambda_result;
-            };
-
-            return GetPlotMousePos_adapt_mutable_param_with_default_value(x_axis, y_axis);
-        },
-        nb::arg("x_axis") = nb::none(), nb::arg("y_axis") = nb::none(),
-        " Returns the mouse position in x,y coordinates of the current plot. Passing IMPLOT_AUTO uses the current axes.\n---\nPython bindings defaults:\n    If any of the params below is None, then its default value below will be used:\n        x_axis: IMPLOT_AUTO\n        y_axis: IMPLOT_AUTO");
-
-    m.def("get_plot_limits",
-        [](const std::optional<const ImAxis> & x_axis = std::nullopt, const std::optional<const ImAxis> & y_axis = std::nullopt) -> ImPlotRect
-        {
-            auto GetPlotLimits_adapt_mutable_param_with_default_value = [](const std::optional<const ImAxis> & x_axis = std::nullopt, const std::optional<const ImAxis> & y_axis = std::nullopt) -> ImPlotRect
-            {
-
-                const ImAxis& x_axis_or_default = [&]() -> const ImAxis {
-                    if (x_axis.has_value())
-                        return x_axis.value();
-                    else
-                        return IMPLOT_AUTO;
-                }();
-
-                const ImAxis& y_axis_or_default = [&]() -> const ImAxis {
-                    if (y_axis.has_value())
-                        return y_axis.value();
-                    else
-                        return IMPLOT_AUTO;
-                }();
-
-                auto lambda_result = ImPlot::GetPlotLimits(x_axis_or_default, y_axis_or_default);
-                return lambda_result;
-            };
-
-            return GetPlotLimits_adapt_mutable_param_with_default_value(x_axis, y_axis);
-        },
-        nb::arg("x_axis") = nb::none(), nb::arg("y_axis") = nb::none(),
-        " Returns the current plot axis range.\n---\nPython bindings defaults:\n    If any of the params below is None, then its default value below will be used:\n        x_axis: IMPLOT_AUTO\n        y_axis: IMPLOT_AUTO");
-
-    m.def("is_plot_hovered",
-        ImPlot::IsPlotHovered, "Returns True if the plot area in the current plot is hovered.");
-
-    m.def("is_axis_hovered",
-        ImPlot::IsAxisHovered,
-        nb::arg("axis"),
-        "Returns True if the axis label area in the current plot is hovered.");
-
-    m.def("is_subplots_hovered",
-        ImPlot::IsSubplotsHovered, "Returns True if the bounding frame of a subplot is hovered.");
-
-    m.def("is_plot_selected",
-        ImPlot::IsPlotSelected, "Returns True if the current plot is being box selected.");
-
-    m.def("get_plot_selection",
-        [](const std::optional<const ImAxis> & x_axis = std::nullopt, const std::optional<const ImAxis> & y_axis = std::nullopt) -> ImPlotRect
-        {
-            auto GetPlotSelection_adapt_mutable_param_with_default_value = [](const std::optional<const ImAxis> & x_axis = std::nullopt, const std::optional<const ImAxis> & y_axis = std::nullopt) -> ImPlotRect
-            {
-
-                const ImAxis& x_axis_or_default = [&]() -> const ImAxis {
-                    if (x_axis.has_value())
-                        return x_axis.value();
-                    else
-                        return IMPLOT_AUTO;
-                }();
-
-                const ImAxis& y_axis_or_default = [&]() -> const ImAxis {
-                    if (y_axis.has_value())
-                        return y_axis.value();
-                    else
-                        return IMPLOT_AUTO;
-                }();
-
-                auto lambda_result = ImPlot::GetPlotSelection(x_axis_or_default, y_axis_or_default);
-                return lambda_result;
-            };
-
-            return GetPlotSelection_adapt_mutable_param_with_default_value(x_axis, y_axis);
-        },
-        nb::arg("x_axis") = nb::none(), nb::arg("y_axis") = nb::none(),
-        " Returns the current plot box selection bounds. Passing IMPLOT_AUTO uses the current axes.\n---\nPython bindings defaults:\n    If any of the params below is None, then its default value below will be used:\n        x_axis: IMPLOT_AUTO\n        y_axis: IMPLOT_AUTO");
-
-    m.def("cancel_plot_selection",
-        ImPlot::CancelPlotSelection, "Cancels a the current plot box selection.");
-
-    m.def("hide_next_item",
-        [](bool hidden = true, const std::optional<const ImPlotCond> & cond = std::nullopt)
-        {
-            auto HideNextItem_adapt_mutable_param_with_default_value = [](bool hidden = true, const std::optional<const ImPlotCond> & cond = std::nullopt)
-            {
-
-                const ImPlotCond& cond_or_default = [&]() -> const ImPlotCond {
-                    if (cond.has_value())
-                        return cond.value();
-                    else
-                        return ImPlotCond_Once;
-                }();
-
-                ImPlot::HideNextItem(hidden, cond_or_default);
-            };
-
-            HideNextItem_adapt_mutable_param_with_default_value(hidden, cond);
-        },
-        nb::arg("hidden") = true, nb::arg("cond") = nb::none(),
-        " Hides or shows the next plot item (i.e. as if it were toggled from the legend).\n Use ImPlotCond_Always if you need to forcefully set this every frame.\n---\nPython bindings defaults:\n    If cond is None, then its default value will be: Cond_Once");
-
-    m.def("begin_aligned_plots",
-        ImPlot::BeginAlignedPlots,
-        nb::arg("group_id"), nb::arg("vertical") = true,
-        " Align axis padding over multiple plots in a single row or column. #group_id must\n be unique. If this function returns True, EndAlignedPlots() must be called.");
-
-    m.def("end_aligned_plots",
-        ImPlot::EndAlignedPlots, "Only call EndAlignedPlots() if BeginAlignedPlots() returns True!");
-
-    m.def("begin_legend_popup",
-        ImPlot::BeginLegendPopup,
-        nb::arg("label_id"), nb::arg("mouse_button") = 1,
-        "Begin a popup for a legend entry.");
-
-    m.def("end_legend_popup",
-        ImPlot::EndLegendPopup, "End a popup for a legend entry.");
-
-    m.def("is_legend_entry_hovered",
-        ImPlot::IsLegendEntryHovered,
-        nb::arg("label_id"),
-        "Returns True if a plot item legend entry is hovered.");
-
-    m.def("begin_drag_drop_target_plot",
-        ImPlot::BeginDragDropTargetPlot, "Turns the current plot's plotting area into a drag and drop target. Don't forget to call EndDragDropTarget!");
-
-    m.def("begin_drag_drop_target_axis",
-        ImPlot::BeginDragDropTargetAxis,
-        nb::arg("axis"),
-        "Turns the current plot's X-axis into a drag and drop target. Don't forget to call EndDragDropTarget!");
-
-    m.def("begin_drag_drop_target_legend",
-        ImPlot::BeginDragDropTargetLegend, "Turns the current plot's legend into a drag and drop target. Don't forget to call EndDragDropTarget!");
-
-    m.def("end_drag_drop_target",
-        ImPlot::EndDragDropTarget, "Ends a drag and drop target (currently just an alias for ImGui::EndDragDropTarget).");
-
-    m.def("begin_drag_drop_source_plot",
-        ImPlot::BeginDragDropSourcePlot,
-        nb::arg("flags") = 0,
-        "Turns the current plot's plotting area into a drag and drop source. You must hold Ctrl. Don't forget to call EndDragDropSource!");
-
-    m.def("begin_drag_drop_source_axis",
-        ImPlot::BeginDragDropSourceAxis,
-        nb::arg("axis"), nb::arg("flags") = 0,
-        "Turns the current plot's X-axis into a drag and drop source. You must hold Ctrl. Don't forget to call EndDragDropSource!");
-
-    m.def("begin_drag_drop_source_item",
-        ImPlot::BeginDragDropSourceItem,
-        nb::arg("label_id"), nb::arg("flags") = 0,
-        "Turns an item in the current plot's legend into drag and drop source. Don't forget to call EndDragDropSource!");
-
-    m.def("end_drag_drop_source",
-        ImPlot::EndDragDropSource, "Ends a drag and drop source (currently just an alias for ImGui::EndDragDropSource).");
-
-    m.def("get_style",
-        ImPlot::GetStyle,
-        "Provides access to plot style structure for permanant modifications to colors, sizes, etc.",
-        nb::rv_policy::reference);
-
-    m.def("style_colors_auto",
-        ImPlot::StyleColorsAuto,
-        nb::arg("dst") = nb::none(),
-        "Style plot colors for current ImGui style (default).");
-
-    m.def("style_colors_classic",
-        ImPlot::StyleColorsClassic,
-        nb::arg("dst") = nb::none(),
-        "Style plot colors for ImGui \"Classic\".");
-
-    m.def("style_colors_dark",
-        ImPlot::StyleColorsDark,
-        nb::arg("dst") = nb::none(),
-        "Style plot colors for ImGui \"Dark\".");
-
-    m.def("style_colors_light",
-        ImPlot::StyleColorsLight,
-        nb::arg("dst") = nb::none(),
-        "Style plot colors for ImGui \"Light\".");
-
-    m.def("push_style_color",
-        nb::overload_cast<ImPlotCol, ImU32>(ImPlot::PushStyleColor), nb::arg("idx"), nb::arg("col"));
-
-    m.def("push_style_color",
-        nb::overload_cast<ImPlotCol, const ImVec4 &>(ImPlot::PushStyleColor), nb::arg("idx"), nb::arg("col"));
-
-    m.def("pop_style_color",
-        ImPlot::PopStyleColor,
-        nb::arg("count") = 1,
-        "Undo temporary style color modification(s). Undo multiple pushes at once by increasing count.");
-
-    m.def("push_style_var",
-        nb::overload_cast<ImPlotStyleVar, float>(ImPlot::PushStyleVar),
-        nb::arg("idx"), nb::arg("val"),
-        "Temporarily modify a style variable of float type. Don't forget to call PopStyleVar!");
-
-    m.def("push_style_var",
-        nb::overload_cast<ImPlotStyleVar, int>(ImPlot::PushStyleVar),
-        nb::arg("idx"), nb::arg("val"),
-        "Temporarily modify a style variable of int type. Don't forget to call PopStyleVar!");
-
-    m.def("push_style_var",
-        nb::overload_cast<ImPlotStyleVar, const ImVec2 &>(ImPlot::PushStyleVar),
-        nb::arg("idx"), nb::arg("val"),
-        "Temporarily modify a style variable of ImVec2 type. Don't forget to call PopStyleVar!");
-
-    m.def("pop_style_var",
-        ImPlot::PopStyleVar,
-        nb::arg("count") = 1,
-        "Undo temporary style variable modification(s). Undo multiple pushes at once by increasing count.");
-
-    m.def("set_next_line_style",
-        [](const std::optional<const ImVec4> & col = std::nullopt, float weight = IMPLOT_AUTO)
-        {
-            auto SetNextLineStyle_adapt_mutable_param_with_default_value = [](const std::optional<const ImVec4> & col = std::nullopt, float weight = IMPLOT_AUTO)
-            {
-
-                const ImVec4& col_or_default = [&]() -> const ImVec4 {
-                    if (col.has_value())
-                        return col.value();
-                    else
-                        return IMPLOT_AUTO_COL;
-                }();
-
-                ImPlot::SetNextLineStyle(col_or_default, weight);
-            };
-
-            SetNextLineStyle_adapt_mutable_param_with_default_value(col, weight);
-        },
-        nb::arg("col") = nb::none(), nb::arg("weight") = IMPLOT_AUTO,
-        " Set the line color and weight for the next item only.\n---\nPython bindings defaults:\n    If col is None, then its default value will be: IMPLOT_AUTO_COL");
-
-    m.def("set_next_fill_style",
-        [](const std::optional<const ImVec4> & col = std::nullopt, float alpha_mod = IMPLOT_AUTO)
-        {
-            auto SetNextFillStyle_adapt_mutable_param_with_default_value = [](const std::optional<const ImVec4> & col = std::nullopt, float alpha_mod = IMPLOT_AUTO)
-            {
-
-                const ImVec4& col_or_default = [&]() -> const ImVec4 {
-                    if (col.has_value())
-                        return col.value();
-                    else
-                        return IMPLOT_AUTO_COL;
-                }();
-
-                ImPlot::SetNextFillStyle(col_or_default, alpha_mod);
-            };
-
-            SetNextFillStyle_adapt_mutable_param_with_default_value(col, alpha_mod);
-        },
-        nb::arg("col") = nb::none(), nb::arg("alpha_mod") = IMPLOT_AUTO,
-        " Set the fill color for the next item only.\n---\nPython bindings defaults:\n    If col is None, then its default value will be: IMPLOT_AUTO_COL");
-
-    m.def("set_next_marker_style",
-        [](const std::optional<const ImPlotMarker> & marker = std::nullopt, float size = IMPLOT_AUTO, const std::optional<const ImVec4> & fill = std::nullopt, float weight = IMPLOT_AUTO, const std::optional<const ImVec4> & outline = std::nullopt)
-        {
-            auto SetNextMarkerStyle_adapt_mutable_param_with_default_value = [](const std::optional<const ImPlotMarker> & marker = std::nullopt, float size = IMPLOT_AUTO, const std::optional<const ImVec4> & fill = std::nullopt, float weight = IMPLOT_AUTO, const std::optional<const ImVec4> & outline = std::nullopt)
-            {
-
-                const ImPlotMarker& marker_or_default = [&]() -> const ImPlotMarker {
-                    if (marker.has_value())
-                        return marker.value();
-                    else
-                        return IMPLOT_AUTO;
-                }();
-
-                const ImVec4& fill_or_default = [&]() -> const ImVec4 {
-                    if (fill.has_value())
-                        return fill.value();
-                    else
-                        return IMPLOT_AUTO_COL;
-                }();
-
-                const ImVec4& outline_or_default = [&]() -> const ImVec4 {
-                    if (outline.has_value())
-                        return outline.value();
-                    else
-                        return IMPLOT_AUTO_COL;
-                }();
-
-                ImPlot::SetNextMarkerStyle(marker_or_default, size, fill_or_default, weight, outline_or_default);
-            };
-
-            SetNextMarkerStyle_adapt_mutable_param_with_default_value(marker, size, fill, weight, outline);
-        },
-        nb::arg("marker") = nb::none(), nb::arg("size") = IMPLOT_AUTO, nb::arg("fill") = nb::none(), nb::arg("weight") = IMPLOT_AUTO, nb::arg("outline") = nb::none(),
-        " Set the marker style for the next item only.\n---\nPython bindings defaults:\n    If any of the params below is None, then its default value below will be used:\n        marker: IMPLOT_AUTO\n        fill: IMPLOT_AUTO_COL\n        outline: IMPLOT_AUTO_COL");
-
-    m.def("set_next_error_bar_style",
-        [](const std::optional<const ImVec4> & col = std::nullopt, float size = IMPLOT_AUTO, float weight = IMPLOT_AUTO)
-        {
-            auto SetNextErrorBarStyle_adapt_mutable_param_with_default_value = [](const std::optional<const ImVec4> & col = std::nullopt, float size = IMPLOT_AUTO, float weight = IMPLOT_AUTO)
-            {
-
-                const ImVec4& col_or_default = [&]() -> const ImVec4 {
-                    if (col.has_value())
-                        return col.value();
-                    else
-                        return IMPLOT_AUTO_COL;
-                }();
-
-                ImPlot::SetNextErrorBarStyle(col_or_default, size, weight);
-            };
-
-            SetNextErrorBarStyle_adapt_mutable_param_with_default_value(col, size, weight);
-        },
-        nb::arg("col") = nb::none(), nb::arg("size") = IMPLOT_AUTO, nb::arg("weight") = IMPLOT_AUTO,
-        " Set the error bar style for the next item only.\n---\nPython bindings defaults:\n    If col is None, then its default value will be: IMPLOT_AUTO_COL");
-
-    m.def("get_last_item_color",
-        ImPlot::GetLastItemColor, "Gets the last item primary color (i.e. its legend icon color)");
-
-    m.def("get_style_color_name",
-        ImPlot::GetStyleColorName,
-        nb::arg("idx"),
-        "Returns the null terminated string name for an ImPlotCol.",
-        nb::rv_policy::reference);
-
-    m.def("get_marker_name",
-        ImPlot::GetMarkerName,
-        nb::arg("idx"),
-        "Returns the null terminated string name for an ImPlotMarker.",
-        nb::rv_policy::reference);
-
-    m.def("get_colormap_count",
-        ImPlot::GetColormapCount, "Returns the number of available colormaps (i.e. the built-in + user-added count).");
-
-    m.def("get_colormap_name",
-        ImPlot::GetColormapName,
-        nb::arg("cmap"),
-        "Returns a null terminated string name for a colormap given an index. Returns None if index is invalid.",
-        nb::rv_policy::reference);
-
-    m.def("get_colormap_index",
-        ImPlot::GetColormapIndex,
-        nb::arg("name"),
-        "Returns an index number for a colormap given a valid string name. Returns -1 if name is invalid.");
-
-    m.def("push_colormap",
-        nb::overload_cast<ImPlotColormap>(ImPlot::PushColormap),
-        nb::arg("cmap"),
-        "Temporarily switch to one of the built-in (i.e. ImPlotColormap_XXX) or user-added colormaps (i.e. a return value of AddColormap). Don't forget to call PopColormap!");
-
-    m.def("push_colormap",
-        nb::overload_cast<const char *>(ImPlot::PushColormap),
-        nb::arg("name"),
-        "Push a colormap by string name. Use built-in names such as \"Default\", \"Deep\", \"Jet\", etc. or a string you provided to AddColormap. Don't forget to call PopColormap!");
-
-    m.def("pop_colormap",
-        ImPlot::PopColormap,
-        nb::arg("count") = 1,
-        "Undo temporary colormap modification(s). Undo multiple pushes at once by increasing count.");
-
-    m.def("next_colormap_color",
-        ImPlot::NextColormapColor, " Returns the next color from the current colormap and advances the colormap for the current plot.\n Can also be used with no return value to skip colors if desired. You need to call this between Begin/EndPlot!");
-
-    m.def("get_colormap_size",
-        [](const std::optional<const ImPlotColormap> & cmap = std::nullopt) -> int
-        {
-            auto GetColormapSize_adapt_mutable_param_with_default_value = [](const std::optional<const ImPlotColormap> & cmap = std::nullopt) -> int
-            {
-
-                const ImPlotColormap& cmap_or_default = [&]() -> const ImPlotColormap {
-                    if (cmap.has_value())
-                        return cmap.value();
-                    else
-                        return IMPLOT_AUTO;
-                }();
-
-                auto lambda_result = ImPlot::GetColormapSize(cmap_or_default);
-                return lambda_result;
-            };
-
-            return GetColormapSize_adapt_mutable_param_with_default_value(cmap);
-        },
-        nb::arg("cmap") = nb::none(),
-        " Returns the size of a colormap.\n---\nPython bindings defaults:\n    If cmap is None, then its default value will be: IMPLOT_AUTO");
-
-    m.def("get_colormap_color",
-        [](int idx, const std::optional<const ImPlotColormap> & cmap = std::nullopt) -> ImVec4
-        {
-            auto GetColormapColor_adapt_mutable_param_with_default_value = [](int idx, const std::optional<const ImPlotColormap> & cmap = std::nullopt) -> ImVec4
-            {
-
-                const ImPlotColormap& cmap_or_default = [&]() -> const ImPlotColormap {
-                    if (cmap.has_value())
-                        return cmap.value();
-                    else
-                        return IMPLOT_AUTO;
-                }();
-
-                auto lambda_result = ImPlot::GetColormapColor(idx, cmap_or_default);
-                return lambda_result;
-            };
-
-            return GetColormapColor_adapt_mutable_param_with_default_value(idx, cmap);
-        },
-        nb::arg("idx"), nb::arg("cmap") = nb::none(),
-        " Returns a color from a colormap given an index >= 0 (modulo will be performed).\n---\nPython bindings defaults:\n    If cmap is None, then its default value will be: IMPLOT_AUTO");
-
-    m.def("sample_colormap",
-        [](float t, const std::optional<const ImPlotColormap> & cmap = std::nullopt) -> ImVec4
-        {
-            auto SampleColormap_adapt_mutable_param_with_default_value = [](float t, const std::optional<const ImPlotColormap> & cmap = std::nullopt) -> ImVec4
-            {
-
-                const ImPlotColormap& cmap_or_default = [&]() -> const ImPlotColormap {
-                    if (cmap.has_value())
-                        return cmap.value();
-                    else
-                        return IMPLOT_AUTO;
-                }();
-
-                auto lambda_result = ImPlot::SampleColormap(t, cmap_or_default);
-                return lambda_result;
-            };
-
-            return SampleColormap_adapt_mutable_param_with_default_value(t, cmap);
-        },
-        nb::arg("t"), nb::arg("cmap") = nb::none(),
-        " Sample a color from the current colormap given t between 0 and 1.\n---\nPython bindings defaults:\n    If cmap is None, then its default value will be: IMPLOT_AUTO");
-
-    m.def("colormap_scale",
-        [](const char * label, double scale_min, double scale_max, const std::optional<const ImVec2> & size = std::nullopt, const char * format = "%g", ImPlotColormapScaleFlags flags = 0, const std::optional<const ImPlotColormap> & cmap = std::nullopt)
-        {
-            auto ColormapScale_adapt_mutable_param_with_default_value = [](const char * label, double scale_min, double scale_max, const std::optional<const ImVec2> & size = std::nullopt, const char * format = "%g", ImPlotColormapScaleFlags flags = 0, const std::optional<const ImPlotColormap> & cmap = std::nullopt)
-            {
-
-                const ImVec2& size_or_default = [&]() -> const ImVec2 {
-                    if (size.has_value())
-                        return size.value();
-                    else
-                        return ImVec2(0,0);
-                }();
-
-                const ImPlotColormap& cmap_or_default = [&]() -> const ImPlotColormap {
-                    if (cmap.has_value())
-                        return cmap.value();
-                    else
-                        return IMPLOT_AUTO;
-                }();
-
-                ImPlot::ColormapScale(label, scale_min, scale_max, size_or_default, format, flags, cmap_or_default);
-            };
-
-            ColormapScale_adapt_mutable_param_with_default_value(label, scale_min, scale_max, size, format, flags, cmap);
-        },
-        nb::arg("label"), nb::arg("scale_min"), nb::arg("scale_max"), nb::arg("size") = nb::none(), nb::arg("format") = "%g", nb::arg("flags") = 0, nb::arg("cmap") = nb::none(),
-        " Shows a vertical color scale with linear spaced ticks using the specified color map. Use double hashes to hide label (e.g. \"##NoLabel\"). If scale_min > scale_max, the scale to color mapping will be reversed.\n---\nPython bindings defaults:\n    If any of the params below is None, then its default value below will be used:\n        size: ImVec2(0,0)\n        cmap: IMPLOT_AUTO");
-
-    m.def("colormap_slider",
-        [](const char * label, float t, ImVec4 * out = nullptr, const char * format = "", const std::optional<const ImPlotColormap> & cmap = std::nullopt) -> std::tuple<bool, float>
-        {
-            auto ColormapSlider_adapt_mutable_param_with_default_value = [](const char * label, float * t, ImVec4 * out = nullptr, const char * format = "", const std::optional<const ImPlotColormap> & cmap = std::nullopt) -> bool
-            {
-
-                const ImPlotColormap& cmap_or_default = [&]() -> const ImPlotColormap {
-                    if (cmap.has_value())
-                        return cmap.value();
-                    else
-                        return IMPLOT_AUTO;
-                }();
-
-                auto lambda_result = ImPlot::ColormapSlider(label, t, out, format, cmap_or_default);
-                return lambda_result;
-            };
-            auto ColormapSlider_adapt_modifiable_immutable_to_return = [&ColormapSlider_adapt_mutable_param_with_default_value](const char * label, float t, ImVec4 * out = nullptr, const char * format = "", const std::optional<const ImPlotColormap> & cmap = std::nullopt) -> std::tuple<bool, float>
-            {
-                float * t_adapt_modifiable = & t;
-
-                bool r = ColormapSlider_adapt_mutable_param_with_default_value(label, t_adapt_modifiable, out, format, cmap);
-                return std::make_tuple(r, t);
-            };
-
-            return ColormapSlider_adapt_modifiable_immutable_to_return(label, t, out, format, cmap);
-        },
-        nb::arg("label"), nb::arg("t"), nb::arg("out") = nb::none(), nb::arg("format") = "", nb::arg("cmap") = nb::none(),
-        " Shows a horizontal slider with a colormap gradient background. Optionally returns the color sampled at t in [0 1].\n---\nPython bindings defaults:\n    If cmap is None, then its default value will be: IMPLOT_AUTO");
-
-    m.def("colormap_button",
-        [](const char * label, const std::optional<const ImVec2> & size = std::nullopt, const std::optional<const ImPlotColormap> & cmap = std::nullopt) -> bool
-        {
-            auto ColormapButton_adapt_mutable_param_with_default_value = [](const char * label, const std::optional<const ImVec2> & size = std::nullopt, const std::optional<const ImPlotColormap> & cmap = std::nullopt) -> bool
-            {
-
-                const ImVec2& size_or_default = [&]() -> const ImVec2 {
-                    if (size.has_value())
-                        return size.value();
-                    else
-                        return ImVec2(0,0);
-                }();
-
-                const ImPlotColormap& cmap_or_default = [&]() -> const ImPlotColormap {
-                    if (cmap.has_value())
-                        return cmap.value();
-                    else
-                        return IMPLOT_AUTO;
-                }();
-
-                auto lambda_result = ImPlot::ColormapButton(label, size_or_default, cmap_or_default);
-                return lambda_result;
-            };
-
-            return ColormapButton_adapt_mutable_param_with_default_value(label, size, cmap);
-        },
-        nb::arg("label"), nb::arg("size") = nb::none(), nb::arg("cmap") = nb::none(),
-        " Shows a button with a colormap gradient brackground.\n---\nPython bindings defaults:\n    If any of the params below is None, then its default value below will be used:\n        size: ImVec2(0,0)\n        cmap: IMPLOT_AUTO");
-
-    m.def("bust_color_cache",
-        [](std::optional<std::string> plot_title_id = std::nullopt)
-        {
-            auto BustColorCache_adapt_const_char_pointer_with_default_null = [](std::optional<std::string> plot_title_id = std::nullopt)
-            {
-                const char * plot_title_id_adapt_default_null = nullptr;
-                if (plot_title_id.has_value())
-                    plot_title_id_adapt_default_null = plot_title_id.value().c_str();
-
-                ImPlot::BustColorCache(plot_title_id_adapt_default_null);
-            };
-
-            BustColorCache_adapt_const_char_pointer_with_default_null(plot_title_id);
-        },
-        nb::arg("plot_title_id") = nb::none(),
-        " When items in a plot sample their color from a colormap, the color is cached and does not change\n unless explicitly overriden. Therefore, if you change the colormap after the item has already been plotted,\n item colors will NOT update. If you need item colors to resample the new colormap, then use this\n function to bust the cached colors. If #plot_title_id is None, then every item in EVERY existing plot\n will be cache busted. Otherwise only the plot specified by #plot_title_id will be busted. For the\n latter, this function must be called in the same ImGui ID scope that the plot is in. You should rarely if ever\n need this function, but it is available for applications that require runtime colormap swaps (e.g. Heatmaps demo).");
-
-    m.def("get_input_map",
-        ImPlot::GetInputMap,
-        "Provides access to input mapping structure for permanant modifications to controls for pan, select, etc.",
-        nb::rv_policy::reference);
-
-    m.def("map_input_default",
-        ImPlot::MapInputDefault,
-        nb::arg("dst") = nb::none(),
-        "Default input mapping: pan = LMB drag, box select = RMB drag, fit = LMB double click, context menu = RMB click, zoom = scroll.");
-
-    m.def("map_input_reverse",
-        ImPlot::MapInputReverse,
-        nb::arg("dst") = nb::none(),
-        "Reverse input mapping: pan = RMB drag, box select = LMB drag, fit = LMB double click, context menu = RMB click, zoom = scroll.");
-
-    m.def("item_icon",
-        nb::overload_cast<const ImVec4 &>(ImPlot::ItemIcon), nb::arg("col"));
-
-    m.def("item_icon",
-        nb::overload_cast<ImU32>(ImPlot::ItemIcon), nb::arg("col"));
-
-    m.def("colormap_icon",
-        ImPlot::ColormapIcon, nb::arg("cmap"));
-
-    m.def("get_plot_draw_list",
-        ImPlot::GetPlotDrawList,
-        "Get the plot draw list for custom rendering to the current plot area. Call between Begin/EndPlot.",
-        nb::rv_policy::reference);
-
-    m.def("push_plot_clip_rect",
-        ImPlot::PushPlotClipRect,
-        nb::arg("expand") = 0,
-        "Push clip rect for rendering to current plot area. The rect can be expanded or contracted by #expand pixels. Call between Begin/EndPlot.");
-
-    m.def("pop_plot_clip_rect",
-        ImPlot::PopPlotClipRect, "Pop plot clip rect. Call between Begin/EndPlot.");
-
-    m.def("show_style_selector",
-        ImPlot::ShowStyleSelector,
-        nb::arg("label"),
-        "Shows ImPlot style selector dropdown menu.");
-
-    m.def("show_colormap_selector",
-        ImPlot::ShowColormapSelector,
-        nb::arg("label"),
-        "Shows ImPlot colormap selector dropdown menu.");
-
-    m.def("show_input_map_selector",
-        ImPlot::ShowInputMapSelector,
-        nb::arg("label"),
-        "Shows ImPlot input map selector dropdown menu.");
-
-    m.def("show_style_editor",
-        ImPlot::ShowStyleEditor,
-        nb::arg("ref") = nb::none(),
-        "Shows ImPlot style editor block (not a window).");
-
-    m.def("show_user_guide",
-        ImPlot::ShowUserGuide, "Add basic help/info block for end users (not a window).");
-
-    m.def("show_metrics_window",
-        [](std::optional<bool> p_popen = std::nullopt) -> std::optional<bool>
-        {
-            auto ShowMetricsWindow_adapt_modifiable_immutable_to_return = [](std::optional<bool> p_popen = std::nullopt) -> std::optional<bool>
-            {
-                bool * p_popen_adapt_modifiable = nullptr;
-                if (p_popen.has_value())
-                    p_popen_adapt_modifiable = & (*p_popen);
-
-                ImPlot::ShowMetricsWindow(p_popen_adapt_modifiable);
-                return p_popen;
-            };
-
-            return ShowMetricsWindow_adapt_modifiable_immutable_to_return(p_popen);
-        },
-        nb::arg("p_popen") = nb::none(),
-        "Shows ImPlot metrics/debug information window.");
-
-    m.def("show_demo_window",
-        [](std::optional<bool> p_open = std::nullopt) -> std::optional<bool>
-        {
-            auto ShowDemoWindow_adapt_modifiable_immutable_to_return = [](std::optional<bool> p_open = std::nullopt) -> std::optional<bool>
-            {
-                bool * p_open_adapt_modifiable = nullptr;
-                if (p_open.has_value())
-                    p_open_adapt_modifiable = & (*p_open);
-
-                ImPlot::ShowDemoWindow(p_open_adapt_modifiable);
-                return p_open;
-            };
-
-            return ShowDemoWindow_adapt_modifiable_immutable_to_return(p_open);
-        },
-        nb::arg("p_open") = nb::none(),
-        "Shows the ImPlot demo window (add implot_demo.cpp to your sources!)");
-    ////////////////////    </generated_from:implot.h>    ////////////////////
-
-    // </litgen_pydef> // Autogenerated code end
-    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  AUTOGENERATED CODE END !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-
-    ///////////////////////////////////////////////////////////////////////////
-    // MANUAL BINDINGS BELOW
-    ///////////////////////////////////////////////////////////////////////////
-
-    // Add a new colormap, inputs are np.array[uint32]
-    m.def("add_colormap",
-        [](const char * name, const nb::ndarray<> & cols, bool qual=true)
-        {
-            const void * values_from_pyarray = cols.data();
-
-            int ndim = (int)cols.ndim();
-            int rows = static_cast<int>(cols.shape(0));
-            int columns = ndim >= 2 ? static_cast<int>(cols.shape(1)) : -1;
-
-            bool is_uint32 = [&cols]()
-            {
-                auto uint_type = static_cast<uint8_t>(nb::dlpack::dtype_code::UInt);
-                uint8_t buffer_type = cols.dtype().code;
-                bool is_uint = buffer_type == uint_type;
-                bool is32bits = cols.dtype().bits == 32;
-                return is_uint && is32bits;
-            }();
-
-            bool is_float = [&cols]()
-            {
-                auto float_type = static_cast<uint8_t>(nb::dlpack::dtype_code::Float);
-                uint8_t buffer_type = cols.dtype().code;
-                bool is_float = buffer_type == float_type;
-                bool is_float_size = cols.dtype().bits / 8 == sizeof(float);
-                return is_float && is_float_size;
-            }();
-
-            if (is_uint32 && (ndim == 1))
-                return ImPlot::AddColormap(name, static_cast<const uint32_t *>(values_from_pyarray), rows, qual);
-            else if (is_float && (ndim == 2) && (columns == 4))
-                return ImPlot::AddColormap(name, static_cast<const ImVec4 *>(values_from_pyarray), rows, qual);
-            else
-                throw std::runtime_error(std::string("Bad array type, expected either 1D array of type uint32, or 2D (Nx4 ->RGBA) array of type float32. Got matrix of ndim =") + std::to_string(ndim) + " for cols.");
-
-        }, nb::arg("name"), nb::arg("cols"), nb::arg("qual") = true,
-        "Add a new colormap."
-        );
-
-    // SetupAxisTicks, cf https://github.com/pthom/imgui_bundle/issues/81
-    m.def("setup_axis_ticks",
-          [](ImAxis axis, double v_min, double v_max, int n_ticks, const std::vector<std::string>& labels, bool keep_default=false)
-          {
-              std::vector<const char*> label_char;
-              for (std::string const& str : labels){
-                  label_char.push_back(str.data());
-              }
-              ImPlot::SetupAxisTicks(axis, v_min, v_max, n_ticks, label_char.data(), keep_default);
-          }, nb::arg("axis"), nb::arg("v_min"), nb::arg("v_max"), nb::arg("n_ticks"), nb::arg("labels"), nb::arg("keep_default"),
-          "Sets an axis' ticks and optionally the labels for the next plot. To keep the default ticks, set #keep_default=true."
-    );
-
-    // PlotHeatmap, cf https://github.com/pthom/imgui_bundle/issues/81
-    m.def("plot_heatmap",
-          [](const char * label_id, const nb::ndarray<> & values, double scale_min = 0, double scale_max=0, const char * label_fmt="%.1f", const ImPlotPoint& bounds_min=ImPlotPoint(0,0), const ImPlotPoint& bounds_max=ImPlotPoint(1,1), ImPlotHeatmapFlags flags = 0)
-          {
-              auto PlotHeatmap_adapt_c_buffers = [](const char * label_id, const nb::ndarray<> & values, double scale_min = 0, double scale_max=0, const char * label_fmt="%.1f",  const ImPlotPoint& bounds_min=ImPlotPoint(0,0), const ImPlotPoint& bounds_max=ImPlotPoint(1,1),  ImPlotHeatmapFlags flags = 0)
-              {
-                  // convert nb::array to C standard buffer (const)
-                  const void * values_from_pyarray = values.data();
-
-                  using np_uint_l = uint64_t;
-                  using np_int_l = int64_t;
-
-                  if (values.ndim() != 2)
-                      throw std::runtime_error("plot_heatmap expects a numpy bidimensional array ");
-                  int rows = static_cast<int>(values.shape(0));
-                  int cols = static_cast<int>(values.shape(1));
-
-                  // Define a lambda to compute the letter code for the buffer type
-                  auto _nanobind_buffer_type_to_letter_code = [](uint8_t dtype_code, size_t sizeof_item)  -> char
-                  {
-                      #define DCODE(T) static_cast<uint8_t>(nb::dlpack::dtype_code::T)
-                      const std::array<std::tuple<uint8_t, size_t, char>, 11> mappings = {{
-                           {DCODE(UInt), 1, 'B'}, {DCODE(UInt), 2, 'H'}, {DCODE(UInt), 4, 'I'}, {DCODE(UInt), 8, 'L'},
-                           {DCODE(Int), 1, 'b'}, {DCODE(Int), 2, 'h'}, {DCODE(Int), 4, 'i'}, {DCODE(Int), 8, 'l'},
-                           {DCODE(Float), 4, 'f'}, {DCODE(Float), 8, 'd'}, {DCODE(Float), 16, 'g'}
-                      }};
-                      #undef DCODE
-                      for (const auto& [code_val, size, letter] : mappings)
-                          if (code_val == dtype_code && size == sizeof_item)
-                              return letter;
-                      throw std::runtime_error("Unsupported dtype");
-                  };
-
-                  // Compute the letter code for the buffer type
-                  uint8_t dtype_code_buffer = values.dtype().code;
-                  size_t sizeof_item_buffer = values.dtype().bits / 8;
-                  char values_type = _nanobind_buffer_type_to_letter_code(dtype_code_buffer, sizeof_item_buffer);
-
-                  // call the correct template version by casting
-                  if (values_type == 'B')
-                      ImPlot::PlotHeatmap(label_id, static_cast<const uint8_t *>(values_from_pyarray), rows, cols, scale_min, scale_max, label_fmt, bounds_min, bounds_max, flags);
-                  else if (values_type == 'b')
-                      ImPlot::PlotHeatmap(label_id, static_cast<const int8_t *>(values_from_pyarray), rows, cols, scale_min, scale_max, label_fmt, bounds_min, bounds_max, flags);
-                  else if (values_type == 'H')
-                      ImPlot::PlotHeatmap(label_id, static_cast<const uint16_t *>(values_from_pyarray), rows, cols, scale_min, scale_max, label_fmt, bounds_min, bounds_max, flags);
-                  else if (values_type == 'h')
-                      ImPlot::PlotHeatmap(label_id, static_cast<const int16_t *>(values_from_pyarray), rows, cols, scale_min, scale_max, label_fmt, bounds_min, bounds_max, flags);
-                  else if (values_type == 'I')
-                      ImPlot::PlotHeatmap(label_id, static_cast<const uint32_t *>(values_from_pyarray), rows, cols, scale_min, scale_max, label_fmt, bounds_min, bounds_max, flags);
-                  else if (values_type == 'i')
-                      ImPlot::PlotHeatmap(label_id, static_cast<const int32_t *>(values_from_pyarray), rows, cols, scale_min, scale_max, label_fmt, bounds_min, bounds_max, flags);
-                  else if (values_type == 'L')
-                      ImPlot::PlotHeatmap(label_id, static_cast<const np_uint_l *>(values_from_pyarray), rows, cols, scale_min, scale_max, label_fmt, bounds_min, bounds_max, flags);
-                  else if (values_type == 'l')
-                      ImPlot::PlotHeatmap(label_id, static_cast<const np_int_l *>(values_from_pyarray), rows, cols, scale_min, scale_max, label_fmt, bounds_min, bounds_max, flags);
-                  else if (values_type == 'f')
-                      ImPlot::PlotHeatmap(label_id, static_cast<const float *>(values_from_pyarray), rows, cols, scale_min, scale_max, label_fmt, bounds_min, bounds_max, flags);
-                  else if (values_type == 'd')
-                      ImPlot::PlotHeatmap(label_id, static_cast<const double *>(values_from_pyarray), rows, cols, scale_min, scale_max, label_fmt, bounds_min, bounds_max, flags);
-                  else if (values_type == 'g')
-                      ImPlot::PlotHeatmap(label_id, static_cast<const long double *>(values_from_pyarray), rows, cols, scale_min, scale_max, label_fmt, bounds_min, bounds_max, flags);
-                  else if (values_type == 'q')
-                      ImPlot::PlotHeatmap(label_id, static_cast<const long long *>(values_from_pyarray), rows, cols, scale_min, scale_max, label_fmt, bounds_min, bounds_max, flags);
-                      // If we reach this point, the array type is not supported!
-                  else
-                      throw std::runtime_error(std::string("Bad array type ('") + values_type + "') for param values");
-              };
-
-              PlotHeatmap_adapt_c_buffers(label_id, values, scale_min, scale_max, label_fmt, bounds_min, bounds_max, flags);
-          },
-          nb::arg("label_id"), nb::arg("values"), nb::arg("scale_min")= 0, nb::arg("scale_max") = 0, nb::arg("label_fmt")="%.1f", nb::arg("bounds_min")=ImPlotPoint(0,0), nb::arg("bounds_max")=ImPlotPoint(1,1), nb::arg("flags")=0
-    );
-
-
-    pyClassImPlotPoint.def("__str__", [](const ImPlotPoint& self) -> std::string {
-       char r[100];
-       snprintf(r, 100, "ImPlotPoint(%f, %f)", self.x, self.y);
-       return r;
-    });
-    pyClassImPlotPoint.def("__repr__", [](const ImPlotPoint& self) -> std::string {
-        char r[100];
-        snprintf(r, 100, "ImPlotPoint(%f, %f)", self.x, self.y);
-        return r;
-    });
-    pyClassImPlotPoint.def("__len__", [](const ImPlotPoint& self) -> size_t {
-        return 2;
-    });
-    pyClassImPlotPoint.def("__iter__", [](const ImPlotPoint& self) {
-            return nb::make_iterator(nb::type<ImPlotPoint>(), "iterator", &self.x, &self.x+2);
-        },
-        nb::keep_alive<0, 1>() /* Essential: keep object alive while iterator exists */
-    );
-    pyClassImPlotPoint.def("__init__", [](ImPlotPoint *self, nb::tuple t) {
-        new (self) ImPlotPoint();
-        *self = cast_to_point(std::move(t));
-    });
-    pyClassImPlotPoint.def("__init__", [](ImPlotPoint *self, nb::list t) {
-        new (self) ImPlotPoint();
-        *self = cast_to_point(std::move(t));
-    });
-//    pyClassImPlotPoint.def("__init__", [](ImPlotPoint *self, nb::ndarray<> t) {
-//        new (self) ImPlotPoint();
-//        *self = cast_to_point(t);
+//    m.def("plot_scatter",
+//        [](const char * label_id, const nb::ndarray<> & values, double xscale = 1, double xstart = 0, ImPlotScatterFlags flags = 0, int offset = 0)
+//        {
+//            auto PlotScatter_adapt_c_buffers = [](const char * label_id, const nb::ndarray<> & values, double xscale = 1, double xstart = 0, ImPlotScatterFlags flags = 0, int offset = 0, int stride = -1)
+//            {
+//                // Check if the array is 1D and C-contiguous
+//                if (! (values.ndim() == 1 && values.stride(0) == 1))
+//                    throw std::runtime_error("The array must be 1D and contiguous");
+//
+//                // convert nb::ndarray to C standard buffer (const)
+//                const void * values_from_pyarray = values.data();
+//                size_t values_count = values.shape(0);
+//
+//                // process stride default value (which was a sizeof in C++)
+//                int values_stride = stride;
+//                if (values_stride == -1)
+//                    values_stride = (int)values.itemsize();
+//
+//                using np_uint_l = uint64_t;
+//                using np_int_l = int64_t;
+//
+//                // Define a lambda to compute the letter code for the buffer type
+//                auto _nanobind_buffer_type_to_letter_code = [](uint8_t dtype_code, size_t sizeof_item)  -> char
+//                {
+//                    #define DCODE(T) static_cast<uint8_t>(nb::dlpack::dtype_code::T)
+//                        const std::array<std::tuple<uint8_t, size_t, char>, 11> mappings = {{
+//                            {DCODE(UInt), 1, 'B'}, {DCODE(UInt), 2, 'H'}, {DCODE(UInt), 4, 'I'}, {DCODE(UInt), 8, 'L'},
+//                            {DCODE(Int), 1, 'b'}, {DCODE(Int), 2, 'h'}, {DCODE(Int), 4, 'i'}, {DCODE(Int), 8, 'l'},
+//                            {DCODE(Float), 4, 'f'}, {DCODE(Float), 8, 'd'}, {DCODE(Float), 16, 'g'}
+//                        }};
+//                    #undef DCODE
+//                    for (const auto& [code_val, size, letter] : mappings)
+//                        if (code_val == dtype_code && size == sizeof_item)
+//                            return letter;
+//                    throw std::runtime_error("Unsupported dtype");
+//                };
+//
+//                // Compute the letter code for the buffer type
+//                uint8_t dtype_code_values = values.dtype().code;
+//                size_t sizeof_item_values = values.dtype().bits / 8;
+//                char values_type = _nanobind_buffer_type_to_letter_code(dtype_code_values, sizeof_item_values);
+//
+//                // call the correct template version by casting
+//                if (values_type == 'B')
+//                    ImPlot::PlotScatter(label_id, static_cast<const uint8_t *>(values_from_pyarray), static_cast<int>(values_count), xscale, xstart, flags, offset, values_stride);
+//                else if (values_type == 'b')
+//                    ImPlot::PlotScatter(label_id, static_cast<const int8_t *>(values_from_pyarray), static_cast<int>(values_count), xscale, xstart, flags, offset, values_stride);
+//                else if (values_type == 'H')
+//                    ImPlot::PlotScatter(label_id, static_cast<const uint16_t *>(values_from_pyarray), static_cast<int>(values_count), xscale, xstart, flags, offset, values_stride);
+//                else if (values_type == 'h')
+//                    ImPlot::PlotScatter(label_id, static_cast<const int16_t *>(values_from_pyarray), static_cast<int>(values_count), xscale, xstart, flags, offset, values_stride);
+//                else if (values_type == 'I')
+//                    ImPlot::PlotScatter(label_id, static_cast<const uint32_t *>(values_from_pyarray), static_cast<int>(values_count), xscale, xstart, flags, offset, values_stride);
+//                else if (values_type == 'i')
+//                    ImPlot::PlotScatter(label_id, static_cast<const int32_t *>(values_from_pyarray), static_cast<int>(values_count), xscale, xstart, flags, offset, values_stride);
+//                else if (values_type == 'L')
+//                    ImPlot::PlotScatter(label_id, static_cast<const np_uint_l *>(values_from_pyarray), static_cast<int>(values_count), xscale, xstart, flags, offset, values_stride);
+//                else if (values_type == 'l')
+//                    ImPlot::PlotScatter(label_id, static_cast<const np_int_l *>(values_from_pyarray), static_cast<int>(values_count), xscale, xstart, flags, offset, values_stride);
+//                else if (values_type == 'f')
+//                    ImPlot::PlotScatter(label_id, static_cast<const float *>(values_from_pyarray), static_cast<int>(values_count), xscale, xstart, flags, offset, values_stride);
+//                else if (values_type == 'd')
+//                    ImPlot::PlotScatter(label_id, static_cast<const double *>(values_from_pyarray), static_cast<int>(values_count), xscale, xstart, flags, offset, values_stride);
+//                else if (values_type == 'g')
+//                    ImPlot::PlotScatter(label_id, static_cast<const long double *>(values_from_pyarray), static_cast<int>(values_count), xscale, xstart, flags, offset, values_stride);
+//                else if (values_type == 'q')
+//                    ImPlot::PlotScatter(label_id, static_cast<const long long *>(values_from_pyarray), static_cast<int>(values_count), xscale, xstart, flags, offset, values_stride);
+//                // If we reach this point, the array type is not supported!
+//                else
+//                    throw std::runtime_error(std::string("Bad array type ('") + values_type + "') for param values");
+//            };
+//            auto PlotScatter_adapt_exclude_params = [&PlotScatter_adapt_c_buffers](const char * label_id, const nb::ndarray<> & values, double xscale = 1, double xstart = 0, ImPlotScatterFlags flags = 0, int offset = 0)
+//            {
+//                PlotScatter_adapt_c_buffers(label_id, values, xscale, xstart, flags, offset, -1);
+//            };
+//
+//            PlotScatter_adapt_exclude_params(label_id, values, xscale, xstart, flags, offset);
+//        },     nb::arg("label_id"), nb::arg("values"), nb::arg("xscale") = 1, nb::arg("xstart") = 0, nb::arg("flags") = 0, nb::arg("offset") = 0);
+//
+//    m.def("plot_scatter",
+//        [](const char * label_id, const nb::ndarray<> & xs, const nb::ndarray<> & ys, ImPlotScatterFlags flags = 0, int offset = 0)
+//        {
+//            auto PlotScatter_adapt_c_buffers = [](const char * label_id, const nb::ndarray<> & xs, const nb::ndarray<> & ys, ImPlotScatterFlags flags = 0, int offset = 0, int stride = -1)
+//            {
+//                // Check if the array is 1D and C-contiguous
+//                if (! (xs.ndim() == 1 && xs.stride(0) == 1))
+//                    throw std::runtime_error("The array must be 1D and contiguous");
+//
+//                // convert nb::ndarray to C standard buffer (const)
+//                const void * xs_from_pyarray = xs.data();
+//                size_t xs_count = xs.shape(0);
+//
+//                // Check if the array is 1D and C-contiguous
+//                if (! (ys.ndim() == 1 && ys.stride(0) == 1))
+//                    throw std::runtime_error("The array must be 1D and contiguous");
+//
+//                // convert nb::ndarray to C standard buffer (const)
+//                const void * ys_from_pyarray = ys.data();
+//                size_t ys_count = ys.shape(0);
+//
+//                // process stride default value (which was a sizeof in C++)
+//                int ys_stride = stride;
+//                if (ys_stride == -1)
+//                    ys_stride = (int)ys.itemsize();
+//
+//                using np_uint_l = uint64_t;
+//                using np_int_l = int64_t;
+//
+//                // Define a lambda to compute the letter code for the buffer type
+//                auto _nanobind_buffer_type_to_letter_code = [](uint8_t dtype_code, size_t sizeof_item)  -> char
+//                {
+//                    #define DCODE(T) static_cast<uint8_t>(nb::dlpack::dtype_code::T)
+//                        const std::array<std::tuple<uint8_t, size_t, char>, 11> mappings = {{
+//                            {DCODE(UInt), 1, 'B'}, {DCODE(UInt), 2, 'H'}, {DCODE(UInt), 4, 'I'}, {DCODE(UInt), 8, 'L'},
+//                            {DCODE(Int), 1, 'b'}, {DCODE(Int), 2, 'h'}, {DCODE(Int), 4, 'i'}, {DCODE(Int), 8, 'l'},
+//                            {DCODE(Float), 4, 'f'}, {DCODE(Float), 8, 'd'}, {DCODE(Float), 16, 'g'}
+//                        }};
+//                    #undef DCODE
+//                    for (const auto& [code_val, size, letter] : mappings)
+//                        if (code_val == dtype_code && size == sizeof_item)
+//                            return letter;
+//                    throw std::runtime_error("Unsupported dtype");
+//                };
+//
+//                // Compute the letter code for the buffer type
+//                uint8_t dtype_code_ys = ys.dtype().code;
+//                size_t sizeof_item_ys = ys.dtype().bits / 8;
+//                char ys_type = _nanobind_buffer_type_to_letter_code(dtype_code_ys, sizeof_item_ys);
+//
+//                // call the correct template version by casting
+//                if (ys_type == 'B')
+//                    ImPlot::PlotScatter(label_id, static_cast<const uint8_t *>(xs_from_pyarray), static_cast<const uint8_t *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
+//                else if (ys_type == 'b')
+//                    ImPlot::PlotScatter(label_id, static_cast<const int8_t *>(xs_from_pyarray), static_cast<const int8_t *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
+//                else if (ys_type == 'H')
+//                    ImPlot::PlotScatter(label_id, static_cast<const uint16_t *>(xs_from_pyarray), static_cast<const uint16_t *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
+//                else if (ys_type == 'h')
+//                    ImPlot::PlotScatter(label_id, static_cast<const int16_t *>(xs_from_pyarray), static_cast<const int16_t *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
+//                else if (ys_type == 'I')
+//                    ImPlot::PlotScatter(label_id, static_cast<const uint32_t *>(xs_from_pyarray), static_cast<const uint32_t *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
+//                else if (ys_type == 'i')
+//                    ImPlot::PlotScatter(label_id, static_cast<const int32_t *>(xs_from_pyarray), static_cast<const int32_t *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
+//                else if (ys_type == 'L')
+//                    ImPlot::PlotScatter(label_id, static_cast<const np_uint_l *>(xs_from_pyarray), static_cast<const np_uint_l *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
+//                else if (ys_type == 'l')
+//                    ImPlot::PlotScatter(label_id, static_cast<const np_int_l *>(xs_from_pyarray), static_cast<const np_int_l *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
+//                else if (ys_type == 'f')
+//                    ImPlot::PlotScatter(label_id, static_cast<const float *>(xs_from_pyarray), static_cast<const float *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
+//                else if (ys_type == 'd')
+//                    ImPlot::PlotScatter(label_id, static_cast<const double *>(xs_from_pyarray), static_cast<const double *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
+//                else if (ys_type == 'g')
+//                    ImPlot::PlotScatter(label_id, static_cast<const long double *>(xs_from_pyarray), static_cast<const long double *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
+//                else if (ys_type == 'q')
+//                    ImPlot::PlotScatter(label_id, static_cast<const long long *>(xs_from_pyarray), static_cast<const long long *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
+//                // If we reach this point, the array type is not supported!
+//                else
+//                    throw std::runtime_error(std::string("Bad array type ('") + ys_type + "') for param ys");
+//            };
+//            auto PlotScatter_adapt_exclude_params = [&PlotScatter_adapt_c_buffers](const char * label_id, const nb::ndarray<> & xs, const nb::ndarray<> & ys, ImPlotScatterFlags flags = 0, int offset = 0)
+//            {
+//                PlotScatter_adapt_c_buffers(label_id, xs, ys, flags, offset, -1);
+//            };
+//
+//            PlotScatter_adapt_exclude_params(label_id, xs, ys, flags, offset);
+//        },     nb::arg("label_id"), nb::arg("xs"), nb::arg("ys"), nb::arg("flags") = 0, nb::arg("offset") = 0);
+//
+//    m.def("plot_stairs",
+//        [](const char * label_id, const nb::ndarray<> & values, double xscale = 1, double xstart = 0, ImPlotStairsFlags flags = 0, int offset = 0)
+//        {
+//            auto PlotStairs_adapt_c_buffers = [](const char * label_id, const nb::ndarray<> & values, double xscale = 1, double xstart = 0, ImPlotStairsFlags flags = 0, int offset = 0, int stride = -1)
+//            {
+//                // Check if the array is 1D and C-contiguous
+//                if (! (values.ndim() == 1 && values.stride(0) == 1))
+//                    throw std::runtime_error("The array must be 1D and contiguous");
+//
+//                // convert nb::ndarray to C standard buffer (const)
+//                const void * values_from_pyarray = values.data();
+//                size_t values_count = values.shape(0);
+//
+//                // process stride default value (which was a sizeof in C++)
+//                int values_stride = stride;
+//                if (values_stride == -1)
+//                    values_stride = (int)values.itemsize();
+//
+//                using np_uint_l = uint64_t;
+//                using np_int_l = int64_t;
+//
+//                // Define a lambda to compute the letter code for the buffer type
+//                auto _nanobind_buffer_type_to_letter_code = [](uint8_t dtype_code, size_t sizeof_item)  -> char
+//                {
+//                    #define DCODE(T) static_cast<uint8_t>(nb::dlpack::dtype_code::T)
+//                        const std::array<std::tuple<uint8_t, size_t, char>, 11> mappings = {{
+//                            {DCODE(UInt), 1, 'B'}, {DCODE(UInt), 2, 'H'}, {DCODE(UInt), 4, 'I'}, {DCODE(UInt), 8, 'L'},
+//                            {DCODE(Int), 1, 'b'}, {DCODE(Int), 2, 'h'}, {DCODE(Int), 4, 'i'}, {DCODE(Int), 8, 'l'},
+//                            {DCODE(Float), 4, 'f'}, {DCODE(Float), 8, 'd'}, {DCODE(Float), 16, 'g'}
+//                        }};
+//                    #undef DCODE
+//                    for (const auto& [code_val, size, letter] : mappings)
+//                        if (code_val == dtype_code && size == sizeof_item)
+//                            return letter;
+//                    throw std::runtime_error("Unsupported dtype");
+//                };
+//
+//                // Compute the letter code for the buffer type
+//                uint8_t dtype_code_values = values.dtype().code;
+//                size_t sizeof_item_values = values.dtype().bits / 8;
+//                char values_type = _nanobind_buffer_type_to_letter_code(dtype_code_values, sizeof_item_values);
+//
+//                // call the correct template version by casting
+//                if (values_type == 'B')
+//                    ImPlot::PlotStairs(label_id, static_cast<const uint8_t *>(values_from_pyarray), static_cast<int>(values_count), xscale, xstart, flags, offset, values_stride);
+//                else if (values_type == 'b')
+//                    ImPlot::PlotStairs(label_id, static_cast<const int8_t *>(values_from_pyarray), static_cast<int>(values_count), xscale, xstart, flags, offset, values_stride);
+//                else if (values_type == 'H')
+//                    ImPlot::PlotStairs(label_id, static_cast<const uint16_t *>(values_from_pyarray), static_cast<int>(values_count), xscale, xstart, flags, offset, values_stride);
+//                else if (values_type == 'h')
+//                    ImPlot::PlotStairs(label_id, static_cast<const int16_t *>(values_from_pyarray), static_cast<int>(values_count), xscale, xstart, flags, offset, values_stride);
+//                else if (values_type == 'I')
+//                    ImPlot::PlotStairs(label_id, static_cast<const uint32_t *>(values_from_pyarray), static_cast<int>(values_count), xscale, xstart, flags, offset, values_stride);
+//                else if (values_type == 'i')
+//                    ImPlot::PlotStairs(label_id, static_cast<const int32_t *>(values_from_pyarray), static_cast<int>(values_count), xscale, xstart, flags, offset, values_stride);
+//                else if (values_type == 'L')
+//                    ImPlot::PlotStairs(label_id, static_cast<const np_uint_l *>(values_from_pyarray), static_cast<int>(values_count), xscale, xstart, flags, offset, values_stride);
+//                else if (values_type == 'l')
+//                    ImPlot::PlotStairs(label_id, static_cast<const np_int_l *>(values_from_pyarray), static_cast<int>(values_count), xscale, xstart, flags, offset, values_stride);
+//                else if (values_type == 'f')
+//                    ImPlot::PlotStairs(label_id, static_cast<const float *>(values_from_pyarray), static_cast<int>(values_count), xscale, xstart, flags, offset, values_stride);
+//                else if (values_type == 'd')
+//                    ImPlot::PlotStairs(label_id, static_cast<const double *>(values_from_pyarray), static_cast<int>(values_count), xscale, xstart, flags, offset, values_stride);
+//                else if (values_type == 'g')
+//                    ImPlot::PlotStairs(label_id, static_cast<const long double *>(values_from_pyarray), static_cast<int>(values_count), xscale, xstart, flags, offset, values_stride);
+//                else if (values_type == 'q')
+//                    ImPlot::PlotStairs(label_id, static_cast<const long long *>(values_from_pyarray), static_cast<int>(values_count), xscale, xstart, flags, offset, values_stride);
+//                // If we reach this point, the array type is not supported!
+//                else
+//                    throw std::runtime_error(std::string("Bad array type ('") + values_type + "') for param values");
+//            };
+//            auto PlotStairs_adapt_exclude_params = [&PlotStairs_adapt_c_buffers](const char * label_id, const nb::ndarray<> & values, double xscale = 1, double xstart = 0, ImPlotStairsFlags flags = 0, int offset = 0)
+//            {
+//                PlotStairs_adapt_c_buffers(label_id, values, xscale, xstart, flags, offset, -1);
+//            };
+//
+//            PlotStairs_adapt_exclude_params(label_id, values, xscale, xstart, flags, offset);
+//        },     nb::arg("label_id"), nb::arg("values"), nb::arg("xscale") = 1, nb::arg("xstart") = 0, nb::arg("flags") = 0, nb::arg("offset") = 0);
+//
+//    m.def("plot_stairs",
+//        [](const char * label_id, const nb::ndarray<> & xs, const nb::ndarray<> & ys, ImPlotStairsFlags flags = 0, int offset = 0)
+//        {
+//            auto PlotStairs_adapt_c_buffers = [](const char * label_id, const nb::ndarray<> & xs, const nb::ndarray<> & ys, ImPlotStairsFlags flags = 0, int offset = 0, int stride = -1)
+//            {
+//                // Check if the array is 1D and C-contiguous
+//                if (! (xs.ndim() == 1 && xs.stride(0) == 1))
+//                    throw std::runtime_error("The array must be 1D and contiguous");
+//
+//                // convert nb::ndarray to C standard buffer (const)
+//                const void * xs_from_pyarray = xs.data();
+//                size_t xs_count = xs.shape(0);
+//
+//                // Check if the array is 1D and C-contiguous
+//                if (! (ys.ndim() == 1 && ys.stride(0) == 1))
+//                    throw std::runtime_error("The array must be 1D and contiguous");
+//
+//                // convert nb::ndarray to C standard buffer (const)
+//                const void * ys_from_pyarray = ys.data();
+//                size_t ys_count = ys.shape(0);
+//
+//                // process stride default value (which was a sizeof in C++)
+//                int ys_stride = stride;
+//                if (ys_stride == -1)
+//                    ys_stride = (int)ys.itemsize();
+//
+//                using np_uint_l = uint64_t;
+//                using np_int_l = int64_t;
+//
+//                // Define a lambda to compute the letter code for the buffer type
+//                auto _nanobind_buffer_type_to_letter_code = [](uint8_t dtype_code, size_t sizeof_item)  -> char
+//                {
+//                    #define DCODE(T) static_cast<uint8_t>(nb::dlpack::dtype_code::T)
+//                        const std::array<std::tuple<uint8_t, size_t, char>, 11> mappings = {{
+//                            {DCODE(UInt), 1, 'B'}, {DCODE(UInt), 2, 'H'}, {DCODE(UInt), 4, 'I'}, {DCODE(UInt), 8, 'L'},
+//                            {DCODE(Int), 1, 'b'}, {DCODE(Int), 2, 'h'}, {DCODE(Int), 4, 'i'}, {DCODE(Int), 8, 'l'},
+//                            {DCODE(Float), 4, 'f'}, {DCODE(Float), 8, 'd'}, {DCODE(Float), 16, 'g'}
+//                        }};
+//                    #undef DCODE
+//                    for (const auto& [code_val, size, letter] : mappings)
+//                        if (code_val == dtype_code && size == sizeof_item)
+//                            return letter;
+//                    throw std::runtime_error("Unsupported dtype");
+//                };
+//
+//                // Compute the letter code for the buffer type
+//                uint8_t dtype_code_ys = ys.dtype().code;
+//                size_t sizeof_item_ys = ys.dtype().bits / 8;
+//                char ys_type = _nanobind_buffer_type_to_letter_code(dtype_code_ys, sizeof_item_ys);
+//
+//                // call the correct template version by casting
+//                if (ys_type == 'B')
+//                    ImPlot::PlotStairs(label_id, static_cast<const uint8_t *>(xs_from_pyarray), static_cast<const uint8_t *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
+//                else if (ys_type == 'b')
+//                    ImPlot::PlotStairs(label_id, static_cast<const int8_t *>(xs_from_pyarray), static_cast<const int8_t *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
+//                else if (ys_type == 'H')
+//                    ImPlot::PlotStairs(label_id, static_cast<const uint16_t *>(xs_from_pyarray), static_cast<const uint16_t *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
+//                else if (ys_type == 'h')
+//                    ImPlot::PlotStairs(label_id, static_cast<const int16_t *>(xs_from_pyarray), static_cast<const int16_t *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
+//                else if (ys_type == 'I')
+//                    ImPlot::PlotStairs(label_id, static_cast<const uint32_t *>(xs_from_pyarray), static_cast<const uint32_t *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
+//                else if (ys_type == 'i')
+//                    ImPlot::PlotStairs(label_id, static_cast<const int32_t *>(xs_from_pyarray), static_cast<const int32_t *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
+//                else if (ys_type == 'L')
+//                    ImPlot::PlotStairs(label_id, static_cast<const np_uint_l *>(xs_from_pyarray), static_cast<const np_uint_l *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
+//                else if (ys_type == 'l')
+//                    ImPlot::PlotStairs(label_id, static_cast<const np_int_l *>(xs_from_pyarray), static_cast<const np_int_l *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
+//                else if (ys_type == 'f')
+//                    ImPlot::PlotStairs(label_id, static_cast<const float *>(xs_from_pyarray), static_cast<const float *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
+//                else if (ys_type == 'd')
+//                    ImPlot::PlotStairs(label_id, static_cast<const double *>(xs_from_pyarray), static_cast<const double *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
+//                else if (ys_type == 'g')
+//                    ImPlot::PlotStairs(label_id, static_cast<const long double *>(xs_from_pyarray), static_cast<const long double *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
+//                else if (ys_type == 'q')
+//                    ImPlot::PlotStairs(label_id, static_cast<const long long *>(xs_from_pyarray), static_cast<const long long *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
+//                // If we reach this point, the array type is not supported!
+//                else
+//                    throw std::runtime_error(std::string("Bad array type ('") + ys_type + "') for param ys");
+//            };
+//            auto PlotStairs_adapt_exclude_params = [&PlotStairs_adapt_c_buffers](const char * label_id, const nb::ndarray<> & xs, const nb::ndarray<> & ys, ImPlotStairsFlags flags = 0, int offset = 0)
+//            {
+//                PlotStairs_adapt_c_buffers(label_id, xs, ys, flags, offset, -1);
+//            };
+//
+//            PlotStairs_adapt_exclude_params(label_id, xs, ys, flags, offset);
+//        },     nb::arg("label_id"), nb::arg("xs"), nb::arg("ys"), nb::arg("flags") = 0, nb::arg("offset") = 0);
+//
+//    m.def("plot_shaded",
+//        [](const char * label_id, const nb::ndarray<> & values, double yref = 0, double xscale = 1, double xstart = 0, ImPlotShadedFlags flags = 0, int offset = 0)
+//        {
+//            auto PlotShaded_adapt_c_buffers = [](const char * label_id, const nb::ndarray<> & values, double yref = 0, double xscale = 1, double xstart = 0, ImPlotShadedFlags flags = 0, int offset = 0, int stride = -1)
+//            {
+//                // Check if the array is 1D and C-contiguous
+//                if (! (values.ndim() == 1 && values.stride(0) == 1))
+//                    throw std::runtime_error("The array must be 1D and contiguous");
+//
+//                // convert nb::ndarray to C standard buffer (const)
+//                const void * values_from_pyarray = values.data();
+//                size_t values_count = values.shape(0);
+//
+//                // process stride default value (which was a sizeof in C++)
+//                int values_stride = stride;
+//                if (values_stride == -1)
+//                    values_stride = (int)values.itemsize();
+//
+//                using np_uint_l = uint64_t;
+//                using np_int_l = int64_t;
+//
+//                // Define a lambda to compute the letter code for the buffer type
+//                auto _nanobind_buffer_type_to_letter_code = [](uint8_t dtype_code, size_t sizeof_item)  -> char
+//                {
+//                    #define DCODE(T) static_cast<uint8_t>(nb::dlpack::dtype_code::T)
+//                        const std::array<std::tuple<uint8_t, size_t, char>, 11> mappings = {{
+//                            {DCODE(UInt), 1, 'B'}, {DCODE(UInt), 2, 'H'}, {DCODE(UInt), 4, 'I'}, {DCODE(UInt), 8, 'L'},
+//                            {DCODE(Int), 1, 'b'}, {DCODE(Int), 2, 'h'}, {DCODE(Int), 4, 'i'}, {DCODE(Int), 8, 'l'},
+//                            {DCODE(Float), 4, 'f'}, {DCODE(Float), 8, 'd'}, {DCODE(Float), 16, 'g'}
+//                        }};
+//                    #undef DCODE
+//                    for (const auto& [code_val, size, letter] : mappings)
+//                        if (code_val == dtype_code && size == sizeof_item)
+//                            return letter;
+//                    throw std::runtime_error("Unsupported dtype");
+//                };
+//
+//                // Compute the letter code for the buffer type
+//                uint8_t dtype_code_values = values.dtype().code;
+//                size_t sizeof_item_values = values.dtype().bits / 8;
+//                char values_type = _nanobind_buffer_type_to_letter_code(dtype_code_values, sizeof_item_values);
+//
+//                // call the correct template version by casting
+//                if (values_type == 'B')
+//                    ImPlot::PlotShaded(label_id, static_cast<const uint8_t *>(values_from_pyarray), static_cast<int>(values_count), yref, xscale, xstart, flags, offset, values_stride);
+//                else if (values_type == 'b')
+//                    ImPlot::PlotShaded(label_id, static_cast<const int8_t *>(values_from_pyarray), static_cast<int>(values_count), yref, xscale, xstart, flags, offset, values_stride);
+//                else if (values_type == 'H')
+//                    ImPlot::PlotShaded(label_id, static_cast<const uint16_t *>(values_from_pyarray), static_cast<int>(values_count), yref, xscale, xstart, flags, offset, values_stride);
+//                else if (values_type == 'h')
+//                    ImPlot::PlotShaded(label_id, static_cast<const int16_t *>(values_from_pyarray), static_cast<int>(values_count), yref, xscale, xstart, flags, offset, values_stride);
+//                else if (values_type == 'I')
+//                    ImPlot::PlotShaded(label_id, static_cast<const uint32_t *>(values_from_pyarray), static_cast<int>(values_count), yref, xscale, xstart, flags, offset, values_stride);
+//                else if (values_type == 'i')
+//                    ImPlot::PlotShaded(label_id, static_cast<const int32_t *>(values_from_pyarray), static_cast<int>(values_count), yref, xscale, xstart, flags, offset, values_stride);
+//                else if (values_type == 'L')
+//                    ImPlot::PlotShaded(label_id, static_cast<const np_uint_l *>(values_from_pyarray), static_cast<int>(values_count), yref, xscale, xstart, flags, offset, values_stride);
+//                else if (values_type == 'l')
+//                    ImPlot::PlotShaded(label_id, static_cast<const np_int_l *>(values_from_pyarray), static_cast<int>(values_count), yref, xscale, xstart, flags, offset, values_stride);
+//                else if (values_type == 'f')
+//                    ImPlot::PlotShaded(label_id, static_cast<const float *>(values_from_pyarray), static_cast<int>(values_count), yref, xscale, xstart, flags, offset, values_stride);
+//                else if (values_type == 'd')
+//                    ImPlot::PlotShaded(label_id, static_cast<const double *>(values_from_pyarray), static_cast<int>(values_count), yref, xscale, xstart, flags, offset, values_stride);
+//                else if (values_type == 'g')
+//                    ImPlot::PlotShaded(label_id, static_cast<const long double *>(values_from_pyarray), static_cast<int>(values_count), yref, xscale, xstart, flags, offset, values_stride);
+//                else if (values_type == 'q')
+//                    ImPlot::PlotShaded(label_id, static_cast<const long long *>(values_from_pyarray), static_cast<int>(values_count), yref, xscale, xstart, flags, offset, values_stride);
+//                // If we reach this point, the array type is not supported!
+//                else
+//                    throw std::runtime_error(std::string("Bad array type ('") + values_type + "') for param values");
+//            };
+//            auto PlotShaded_adapt_exclude_params = [&PlotShaded_adapt_c_buffers](const char * label_id, const nb::ndarray<> & values, double yref = 0, double xscale = 1, double xstart = 0, ImPlotShadedFlags flags = 0, int offset = 0)
+//            {
+//                PlotShaded_adapt_c_buffers(label_id, values, yref, xscale, xstart, flags, offset, -1);
+//            };
+//
+//            PlotShaded_adapt_exclude_params(label_id, values, yref, xscale, xstart, flags, offset);
+//        },     nb::arg("label_id"), nb::arg("values"), nb::arg("yref") = 0, nb::arg("xscale") = 1, nb::arg("xstart") = 0, nb::arg("flags") = 0, nb::arg("offset") = 0);
+//
+//    m.def("plot_shaded",
+//        [](const char * label_id, const nb::ndarray<> & xs, const nb::ndarray<> & ys, double yref = 0, ImPlotShadedFlags flags = 0, int offset = 0)
+//        {
+//            auto PlotShaded_adapt_c_buffers = [](const char * label_id, const nb::ndarray<> & xs, const nb::ndarray<> & ys, double yref = 0, ImPlotShadedFlags flags = 0, int offset = 0, int stride = -1)
+//            {
+//                // Check if the array is 1D and C-contiguous
+//                if (! (xs.ndim() == 1 && xs.stride(0) == 1))
+//                    throw std::runtime_error("The array must be 1D and contiguous");
+//
+//                // convert nb::ndarray to C standard buffer (const)
+//                const void * xs_from_pyarray = xs.data();
+//                size_t xs_count = xs.shape(0);
+//
+//                // Check if the array is 1D and C-contiguous
+//                if (! (ys.ndim() == 1 && ys.stride(0) == 1))
+//                    throw std::runtime_error("The array must be 1D and contiguous");
+//
+//                // convert nb::ndarray to C standard buffer (const)
+//                const void * ys_from_pyarray = ys.data();
+//                size_t ys_count = ys.shape(0);
+//
+//                // process stride default value (which was a sizeof in C++)
+//                int ys_stride = stride;
+//                if (ys_stride == -1)
+//                    ys_stride = (int)ys.itemsize();
+//
+//                using np_uint_l = uint64_t;
+//                using np_int_l = int64_t;
+//
+//                // Define a lambda to compute the letter code for the buffer type
+//                auto _nanobind_buffer_type_to_letter_code = [](uint8_t dtype_code, size_t sizeof_item)  -> char
+//                {
+//                    #define DCODE(T) static_cast<uint8_t>(nb::dlpack::dtype_code::T)
+//                        const std::array<std::tuple<uint8_t, size_t, char>, 11> mappings = {{
+//                            {DCODE(UInt), 1, 'B'}, {DCODE(UInt), 2, 'H'}, {DCODE(UInt), 4, 'I'}, {DCODE(UInt), 8, 'L'},
+//                            {DCODE(Int), 1, 'b'}, {DCODE(Int), 2, 'h'}, {DCODE(Int), 4, 'i'}, {DCODE(Int), 8, 'l'},
+//                            {DCODE(Float), 4, 'f'}, {DCODE(Float), 8, 'd'}, {DCODE(Float), 16, 'g'}
+//                        }};
+//                    #undef DCODE
+//                    for (const auto& [code_val, size, letter] : mappings)
+//                        if (code_val == dtype_code && size == sizeof_item)
+//                            return letter;
+//                    throw std::runtime_error("Unsupported dtype");
+//                };
+//
+//                // Compute the letter code for the buffer type
+//                uint8_t dtype_code_ys = ys.dtype().code;
+//                size_t sizeof_item_ys = ys.dtype().bits / 8;
+//                char ys_type = _nanobind_buffer_type_to_letter_code(dtype_code_ys, sizeof_item_ys);
+//
+//                // call the correct template version by casting
+//                if (ys_type == 'B')
+//                    ImPlot::PlotShaded(label_id, static_cast<const uint8_t *>(xs_from_pyarray), static_cast<const uint8_t *>(ys_from_pyarray), static_cast<int>(ys_count), yref, flags, offset, ys_stride);
+//                else if (ys_type == 'b')
+//                    ImPlot::PlotShaded(label_id, static_cast<const int8_t *>(xs_from_pyarray), static_cast<const int8_t *>(ys_from_pyarray), static_cast<int>(ys_count), yref, flags, offset, ys_stride);
+//                else if (ys_type == 'H')
+//                    ImPlot::PlotShaded(label_id, static_cast<const uint16_t *>(xs_from_pyarray), static_cast<const uint16_t *>(ys_from_pyarray), static_cast<int>(ys_count), yref, flags, offset, ys_stride);
+//                else if (ys_type == 'h')
+//                    ImPlot::PlotShaded(label_id, static_cast<const int16_t *>(xs_from_pyarray), static_cast<const int16_t *>(ys_from_pyarray), static_cast<int>(ys_count), yref, flags, offset, ys_stride);
+//                else if (ys_type == 'I')
+//                    ImPlot::PlotShaded(label_id, static_cast<const uint32_t *>(xs_from_pyarray), static_cast<const uint32_t *>(ys_from_pyarray), static_cast<int>(ys_count), yref, flags, offset, ys_stride);
+//                else if (ys_type == 'i')
+//                    ImPlot::PlotShaded(label_id, static_cast<const int32_t *>(xs_from_pyarray), static_cast<const int32_t *>(ys_from_pyarray), static_cast<int>(ys_count), yref, flags, offset, ys_stride);
+//                else if (ys_type == 'L')
+//                    ImPlot::PlotShaded(label_id, static_cast<const np_uint_l *>(xs_from_pyarray), static_cast<const np_uint_l *>(ys_from_pyarray), static_cast<int>(ys_count), yref, flags, offset, ys_stride);
+//                else if (ys_type == 'l')
+//                    ImPlot::PlotShaded(label_id, static_cast<const np_int_l *>(xs_from_pyarray), static_cast<const np_int_l *>(ys_from_pyarray), static_cast<int>(ys_count), yref, flags, offset, ys_stride);
+//                else if (ys_type == 'f')
+//                    ImPlot::PlotShaded(label_id, static_cast<const float *>(xs_from_pyarray), static_cast<const float *>(ys_from_pyarray), static_cast<int>(ys_count), yref, flags, offset, ys_stride);
+//                else if (ys_type == 'd')
+//                    ImPlot::PlotShaded(label_id, static_cast<const double *>(xs_from_pyarray), static_cast<const double *>(ys_from_pyarray), static_cast<int>(ys_count), yref, flags, offset, ys_stride);
+//                else if (ys_type == 'g')
+//                    ImPlot::PlotShaded(label_id, static_cast<const long double *>(xs_from_pyarray), static_cast<const long double *>(ys_from_pyarray), static_cast<int>(ys_count), yref, flags, offset, ys_stride);
+//                else if (ys_type == 'q')
+//                    ImPlot::PlotShaded(label_id, static_cast<const long long *>(xs_from_pyarray), static_cast<const long long *>(ys_from_pyarray), static_cast<int>(ys_count), yref, flags, offset, ys_stride);
+//                // If we reach this point, the array type is not supported!
+//                else
+//                    throw std::runtime_error(std::string("Bad array type ('") + ys_type + "') for param ys");
+//            };
+//            auto PlotShaded_adapt_exclude_params = [&PlotShaded_adapt_c_buffers](const char * label_id, const nb::ndarray<> & xs, const nb::ndarray<> & ys, double yref = 0, ImPlotShadedFlags flags = 0, int offset = 0)
+//            {
+//                PlotShaded_adapt_c_buffers(label_id, xs, ys, yref, flags, offset, -1);
+//            };
+//
+//            PlotShaded_adapt_exclude_params(label_id, xs, ys, yref, flags, offset);
+//        },     nb::arg("label_id"), nb::arg("xs"), nb::arg("ys"), nb::arg("yref") = 0, nb::arg("flags") = 0, nb::arg("offset") = 0);
+//
+//    m.def("plot_shaded",
+//        [](const char * label_id, const nb::ndarray<> & xs, const nb::ndarray<> & ys1, const nb::ndarray<> & ys2, ImPlotShadedFlags flags = 0, int offset = 0)
+//        {
+//            auto PlotShaded_adapt_c_buffers = [](const char * label_id, const nb::ndarray<> & xs, const nb::ndarray<> & ys1, const nb::ndarray<> & ys2, ImPlotShadedFlags flags = 0, int offset = 0, int stride = -1)
+//            {
+//                // Check if the array is 1D and C-contiguous
+//                if (! (xs.ndim() == 1 && xs.stride(0) == 1))
+//                    throw std::runtime_error("The array must be 1D and contiguous");
+//
+//                // convert nb::ndarray to C standard buffer (const)
+//                const void * xs_from_pyarray = xs.data();
+//                size_t xs_count = xs.shape(0);
+//
+//                // Check if the array is 1D and C-contiguous
+//                if (! (ys1.ndim() == 1 && ys1.stride(0) == 1))
+//                    throw std::runtime_error("The array must be 1D and contiguous");
+//
+//                // convert nb::ndarray to C standard buffer (const)
+//                const void * ys1_from_pyarray = ys1.data();
+//                size_t ys1_count = ys1.shape(0);
+//
+//                // Check if the array is 1D and C-contiguous
+//                if (! (ys2.ndim() == 1 && ys2.stride(0) == 1))
+//                    throw std::runtime_error("The array must be 1D and contiguous");
+//
+//                // convert nb::ndarray to C standard buffer (const)
+//                const void * ys2_from_pyarray = ys2.data();
+//                size_t ys2_count = ys2.shape(0);
+//
+//                // process stride default value (which was a sizeof in C++)
+//                int ys2_stride = stride;
+//                if (ys2_stride == -1)
+//                    ys2_stride = (int)ys2.itemsize();
+//
+//                using np_uint_l = uint64_t;
+//                using np_int_l = int64_t;
+//
+//                // Define a lambda to compute the letter code for the buffer type
+//                auto _nanobind_buffer_type_to_letter_code = [](uint8_t dtype_code, size_t sizeof_item)  -> char
+//                {
+//                    #define DCODE(T) static_cast<uint8_t>(nb::dlpack::dtype_code::T)
+//                        const std::array<std::tuple<uint8_t, size_t, char>, 11> mappings = {{
+//                            {DCODE(UInt), 1, 'B'}, {DCODE(UInt), 2, 'H'}, {DCODE(UInt), 4, 'I'}, {DCODE(UInt), 8, 'L'},
+//                            {DCODE(Int), 1, 'b'}, {DCODE(Int), 2, 'h'}, {DCODE(Int), 4, 'i'}, {DCODE(Int), 8, 'l'},
+//                            {DCODE(Float), 4, 'f'}, {DCODE(Float), 8, 'd'}, {DCODE(Float), 16, 'g'}
+//                        }};
+//                    #undef DCODE
+//                    for (const auto& [code_val, size, letter] : mappings)
+//                        if (code_val == dtype_code && size == sizeof_item)
+//                            return letter;
+//                    throw std::runtime_error("Unsupported dtype");
+//                };
+//
+//                // Compute the letter code for the buffer type
+//                uint8_t dtype_code_ys2 = ys2.dtype().code;
+//                size_t sizeof_item_ys2 = ys2.dtype().bits / 8;
+//                char ys2_type = _nanobind_buffer_type_to_letter_code(dtype_code_ys2, sizeof_item_ys2);
+//
+//                // call the correct template version by casting
+//                if (ys2_type == 'B')
+//                    ImPlot::PlotShaded(label_id, static_cast<const uint8_t *>(xs_from_pyarray), static_cast<const uint8_t *>(ys1_from_pyarray), static_cast<const uint8_t *>(ys2_from_pyarray), static_cast<int>(ys2_count), flags, offset, ys2_stride);
+//                else if (ys2_type == 'b')
+//                    ImPlot::PlotShaded(label_id, static_cast<const int8_t *>(xs_from_pyarray), static_cast<const int8_t *>(ys1_from_pyarray), static_cast<const int8_t *>(ys2_from_pyarray), static_cast<int>(ys2_count), flags, offset, ys2_stride);
+//                else if (ys2_type == 'H')
+//                    ImPlot::PlotShaded(label_id, static_cast<const uint16_t *>(xs_from_pyarray), static_cast<const uint16_t *>(ys1_from_pyarray), static_cast<const uint16_t *>(ys2_from_pyarray), static_cast<int>(ys2_count), flags, offset, ys2_stride);
+//                else if (ys2_type == 'h')
+//                    ImPlot::PlotShaded(label_id, static_cast<const int16_t *>(xs_from_pyarray), static_cast<const int16_t *>(ys1_from_pyarray), static_cast<const int16_t *>(ys2_from_pyarray), static_cast<int>(ys2_count), flags, offset, ys2_stride);
+//                else if (ys2_type == 'I')
+//                    ImPlot::PlotShaded(label_id, static_cast<const uint32_t *>(xs_from_pyarray), static_cast<const uint32_t *>(ys1_from_pyarray), static_cast<const uint32_t *>(ys2_from_pyarray), static_cast<int>(ys2_count), flags, offset, ys2_stride);
+//                else if (ys2_type == 'i')
+//                    ImPlot::PlotShaded(label_id, static_cast<const int32_t *>(xs_from_pyarray), static_cast<const int32_t *>(ys1_from_pyarray), static_cast<const int32_t *>(ys2_from_pyarray), static_cast<int>(ys2_count), flags, offset, ys2_stride);
+//                else if (ys2_type == 'L')
+//                    ImPlot::PlotShaded(label_id, static_cast<const np_uint_l *>(xs_from_pyarray), static_cast<const np_uint_l *>(ys1_from_pyarray), static_cast<const np_uint_l *>(ys2_from_pyarray), static_cast<int>(ys2_count), flags, offset, ys2_stride);
+//                else if (ys2_type == 'l')
+//                    ImPlot::PlotShaded(label_id, static_cast<const np_int_l *>(xs_from_pyarray), static_cast<const np_int_l *>(ys1_from_pyarray), static_cast<const np_int_l *>(ys2_from_pyarray), static_cast<int>(ys2_count), flags, offset, ys2_stride);
+//                else if (ys2_type == 'f')
+//                    ImPlot::PlotShaded(label_id, static_cast<const float *>(xs_from_pyarray), static_cast<const float *>(ys1_from_pyarray), static_cast<const float *>(ys2_from_pyarray), static_cast<int>(ys2_count), flags, offset, ys2_stride);
+//                else if (ys2_type == 'd')
+//                    ImPlot::PlotShaded(label_id, static_cast<const double *>(xs_from_pyarray), static_cast<const double *>(ys1_from_pyarray), static_cast<const double *>(ys2_from_pyarray), static_cast<int>(ys2_count), flags, offset, ys2_stride);
+//                else if (ys2_type == 'g')
+//                    ImPlot::PlotShaded(label_id, static_cast<const long double *>(xs_from_pyarray), static_cast<const long double *>(ys1_from_pyarray), static_cast<const long double *>(ys2_from_pyarray), static_cast<int>(ys2_count), flags, offset, ys2_stride);
+//                else if (ys2_type == 'q')
+//                    ImPlot::PlotShaded(label_id, static_cast<const long long *>(xs_from_pyarray), static_cast<const long long *>(ys1_from_pyarray), static_cast<const long long *>(ys2_from_pyarray), static_cast<int>(ys2_count), flags, offset, ys2_stride);
+//                // If we reach this point, the array type is not supported!
+//                else
+//                    throw std::runtime_error(std::string("Bad array type ('") + ys2_type + "') for param ys2");
+//            };
+//            auto PlotShaded_adapt_exclude_params = [&PlotShaded_adapt_c_buffers](const char * label_id, const nb::ndarray<> & xs, const nb::ndarray<> & ys1, const nb::ndarray<> & ys2, ImPlotShadedFlags flags = 0, int offset = 0)
+//            {
+//                PlotShaded_adapt_c_buffers(label_id, xs, ys1, ys2, flags, offset, -1);
+//            };
+//
+//            PlotShaded_adapt_exclude_params(label_id, xs, ys1, ys2, flags, offset);
+//        },     nb::arg("label_id"), nb::arg("xs"), nb::arg("ys1"), nb::arg("ys2"), nb::arg("flags") = 0, nb::arg("offset") = 0);
+//
+//    m.def("plot_bars",
+//        [](const char * label_id, const nb::ndarray<> & values, double bar_size = 0.67, double shift = 0, ImPlotBarsFlags flags = 0, int offset = 0)
+//        {
+//            auto PlotBars_adapt_c_buffers = [](const char * label_id, const nb::ndarray<> & values, double bar_size = 0.67, double shift = 0, ImPlotBarsFlags flags = 0, int offset = 0, int stride = -1)
+//            {
+//                // Check if the array is 1D and C-contiguous
+//                if (! (values.ndim() == 1 && values.stride(0) == 1))
+//                    throw std::runtime_error("The array must be 1D and contiguous");
+//
+//                // convert nb::ndarray to C standard buffer (const)
+//                const void * values_from_pyarray = values.data();
+//                size_t values_count = values.shape(0);
+//
+//                // process stride default value (which was a sizeof in C++)
+//                int values_stride = stride;
+//                if (values_stride == -1)
+//                    values_stride = (int)values.itemsize();
+//
+//                using np_uint_l = uint64_t;
+//                using np_int_l = int64_t;
+//
+//                // Define a lambda to compute the letter code for the buffer type
+//                auto _nanobind_buffer_type_to_letter_code = [](uint8_t dtype_code, size_t sizeof_item)  -> char
+//                {
+//                    #define DCODE(T) static_cast<uint8_t>(nb::dlpack::dtype_code::T)
+//                        const std::array<std::tuple<uint8_t, size_t, char>, 11> mappings = {{
+//                            {DCODE(UInt), 1, 'B'}, {DCODE(UInt), 2, 'H'}, {DCODE(UInt), 4, 'I'}, {DCODE(UInt), 8, 'L'},
+//                            {DCODE(Int), 1, 'b'}, {DCODE(Int), 2, 'h'}, {DCODE(Int), 4, 'i'}, {DCODE(Int), 8, 'l'},
+//                            {DCODE(Float), 4, 'f'}, {DCODE(Float), 8, 'd'}, {DCODE(Float), 16, 'g'}
+//                        }};
+//                    #undef DCODE
+//                    for (const auto& [code_val, size, letter] : mappings)
+//                        if (code_val == dtype_code && size == sizeof_item)
+//                            return letter;
+//                    throw std::runtime_error("Unsupported dtype");
+//                };
+//
+//                // Compute the letter code for the buffer type
+//                uint8_t dtype_code_values = values.dtype().code;
+//                size_t sizeof_item_values = values.dtype().bits / 8;
+//                char values_type = _nanobind_buffer_type_to_letter_code(dtype_code_values, sizeof_item_values);
+//
+//                // call the correct template version by casting
+//                if (values_type == 'B')
+//                    ImPlot::PlotBars(label_id, static_cast<const uint8_t *>(values_from_pyarray), static_cast<int>(values_count), bar_size, shift, flags, offset, values_stride);
+//                else if (values_type == 'b')
+//                    ImPlot::PlotBars(label_id, static_cast<const int8_t *>(values_from_pyarray), static_cast<int>(values_count), bar_size, shift, flags, offset, values_stride);
+//                else if (values_type == 'H')
+//                    ImPlot::PlotBars(label_id, static_cast<const uint16_t *>(values_from_pyarray), static_cast<int>(values_count), bar_size, shift, flags, offset, values_stride);
+//                else if (values_type == 'h')
+//                    ImPlot::PlotBars(label_id, static_cast<const int16_t *>(values_from_pyarray), static_cast<int>(values_count), bar_size, shift, flags, offset, values_stride);
+//                else if (values_type == 'I')
+//                    ImPlot::PlotBars(label_id, static_cast<const uint32_t *>(values_from_pyarray), static_cast<int>(values_count), bar_size, shift, flags, offset, values_stride);
+//                else if (values_type == 'i')
+//                    ImPlot::PlotBars(label_id, static_cast<const int32_t *>(values_from_pyarray), static_cast<int>(values_count), bar_size, shift, flags, offset, values_stride);
+//                else if (values_type == 'L')
+//                    ImPlot::PlotBars(label_id, static_cast<const np_uint_l *>(values_from_pyarray), static_cast<int>(values_count), bar_size, shift, flags, offset, values_stride);
+//                else if (values_type == 'l')
+//                    ImPlot::PlotBars(label_id, static_cast<const np_int_l *>(values_from_pyarray), static_cast<int>(values_count), bar_size, shift, flags, offset, values_stride);
+//                else if (values_type == 'f')
+//                    ImPlot::PlotBars(label_id, static_cast<const float *>(values_from_pyarray), static_cast<int>(values_count), bar_size, shift, flags, offset, values_stride);
+//                else if (values_type == 'd')
+//                    ImPlot::PlotBars(label_id, static_cast<const double *>(values_from_pyarray), static_cast<int>(values_count), bar_size, shift, flags, offset, values_stride);
+//                else if (values_type == 'g')
+//                    ImPlot::PlotBars(label_id, static_cast<const long double *>(values_from_pyarray), static_cast<int>(values_count), bar_size, shift, flags, offset, values_stride);
+//                else if (values_type == 'q')
+//                    ImPlot::PlotBars(label_id, static_cast<const long long *>(values_from_pyarray), static_cast<int>(values_count), bar_size, shift, flags, offset, values_stride);
+//                // If we reach this point, the array type is not supported!
+//                else
+//                    throw std::runtime_error(std::string("Bad array type ('") + values_type + "') for param values");
+//            };
+//            auto PlotBars_adapt_exclude_params = [&PlotBars_adapt_c_buffers](const char * label_id, const nb::ndarray<> & values, double bar_size = 0.67, double shift = 0, ImPlotBarsFlags flags = 0, int offset = 0)
+//            {
+//                PlotBars_adapt_c_buffers(label_id, values, bar_size, shift, flags, offset, -1);
+//            };
+//
+//            PlotBars_adapt_exclude_params(label_id, values, bar_size, shift, flags, offset);
+//        },     nb::arg("label_id"), nb::arg("values"), nb::arg("bar_size") = 0.67, nb::arg("shift") = 0, nb::arg("flags") = 0, nb::arg("offset") = 0);
+//
+//    m.def("plot_bars",
+//        [](const char * label_id, const nb::ndarray<> & xs, const nb::ndarray<> & ys, double bar_size, ImPlotBarsFlags flags = 0, int offset = 0)
+//        {
+//            auto PlotBars_adapt_c_buffers = [](const char * label_id, const nb::ndarray<> & xs, const nb::ndarray<> & ys, double bar_size, ImPlotBarsFlags flags = 0, int offset = 0, int stride = -1)
+//            {
+//                // Check if the array is 1D and C-contiguous
+//                if (! (xs.ndim() == 1 && xs.stride(0) == 1))
+//                    throw std::runtime_error("The array must be 1D and contiguous");
+//
+//                // convert nb::ndarray to C standard buffer (const)
+//                const void * xs_from_pyarray = xs.data();
+//                size_t xs_count = xs.shape(0);
+//
+//                // Check if the array is 1D and C-contiguous
+//                if (! (ys.ndim() == 1 && ys.stride(0) == 1))
+//                    throw std::runtime_error("The array must be 1D and contiguous");
+//
+//                // convert nb::ndarray to C standard buffer (const)
+//                const void * ys_from_pyarray = ys.data();
+//                size_t ys_count = ys.shape(0);
+//
+//                // process stride default value (which was a sizeof in C++)
+//                int ys_stride = stride;
+//                if (ys_stride == -1)
+//                    ys_stride = (int)ys.itemsize();
+//
+//                using np_uint_l = uint64_t;
+//                using np_int_l = int64_t;
+//
+//                // Define a lambda to compute the letter code for the buffer type
+//                auto _nanobind_buffer_type_to_letter_code = [](uint8_t dtype_code, size_t sizeof_item)  -> char
+//                {
+//                    #define DCODE(T) static_cast<uint8_t>(nb::dlpack::dtype_code::T)
+//                        const std::array<std::tuple<uint8_t, size_t, char>, 11> mappings = {{
+//                            {DCODE(UInt), 1, 'B'}, {DCODE(UInt), 2, 'H'}, {DCODE(UInt), 4, 'I'}, {DCODE(UInt), 8, 'L'},
+//                            {DCODE(Int), 1, 'b'}, {DCODE(Int), 2, 'h'}, {DCODE(Int), 4, 'i'}, {DCODE(Int), 8, 'l'},
+//                            {DCODE(Float), 4, 'f'}, {DCODE(Float), 8, 'd'}, {DCODE(Float), 16, 'g'}
+//                        }};
+//                    #undef DCODE
+//                    for (const auto& [code_val, size, letter] : mappings)
+//                        if (code_val == dtype_code && size == sizeof_item)
+//                            return letter;
+//                    throw std::runtime_error("Unsupported dtype");
+//                };
+//
+//                // Compute the letter code for the buffer type
+//                uint8_t dtype_code_ys = ys.dtype().code;
+//                size_t sizeof_item_ys = ys.dtype().bits / 8;
+//                char ys_type = _nanobind_buffer_type_to_letter_code(dtype_code_ys, sizeof_item_ys);
+//
+//                // call the correct template version by casting
+//                if (ys_type == 'B')
+//                    ImPlot::PlotBars(label_id, static_cast<const uint8_t *>(xs_from_pyarray), static_cast<const uint8_t *>(ys_from_pyarray), static_cast<int>(ys_count), bar_size, flags, offset, ys_stride);
+//                else if (ys_type == 'b')
+//                    ImPlot::PlotBars(label_id, static_cast<const int8_t *>(xs_from_pyarray), static_cast<const int8_t *>(ys_from_pyarray), static_cast<int>(ys_count), bar_size, flags, offset, ys_stride);
+//                else if (ys_type == 'H')
+//                    ImPlot::PlotBars(label_id, static_cast<const uint16_t *>(xs_from_pyarray), static_cast<const uint16_t *>(ys_from_pyarray), static_cast<int>(ys_count), bar_size, flags, offset, ys_stride);
+//                else if (ys_type == 'h')
+//                    ImPlot::PlotBars(label_id, static_cast<const int16_t *>(xs_from_pyarray), static_cast<const int16_t *>(ys_from_pyarray), static_cast<int>(ys_count), bar_size, flags, offset, ys_stride);
+//                else if (ys_type == 'I')
+//                    ImPlot::PlotBars(label_id, static_cast<const uint32_t *>(xs_from_pyarray), static_cast<const uint32_t *>(ys_from_pyarray), static_cast<int>(ys_count), bar_size, flags, offset, ys_stride);
+//                else if (ys_type == 'i')
+//                    ImPlot::PlotBars(label_id, static_cast<const int32_t *>(xs_from_pyarray), static_cast<const int32_t *>(ys_from_pyarray), static_cast<int>(ys_count), bar_size, flags, offset, ys_stride);
+//                else if (ys_type == 'L')
+//                    ImPlot::PlotBars(label_id, static_cast<const np_uint_l *>(xs_from_pyarray), static_cast<const np_uint_l *>(ys_from_pyarray), static_cast<int>(ys_count), bar_size, flags, offset, ys_stride);
+//                else if (ys_type == 'l')
+//                    ImPlot::PlotBars(label_id, static_cast<const np_int_l *>(xs_from_pyarray), static_cast<const np_int_l *>(ys_from_pyarray), static_cast<int>(ys_count), bar_size, flags, offset, ys_stride);
+//                else if (ys_type == 'f')
+//                    ImPlot::PlotBars(label_id, static_cast<const float *>(xs_from_pyarray), static_cast<const float *>(ys_from_pyarray), static_cast<int>(ys_count), bar_size, flags, offset, ys_stride);
+//                else if (ys_type == 'd')
+//                    ImPlot::PlotBars(label_id, static_cast<const double *>(xs_from_pyarray), static_cast<const double *>(ys_from_pyarray), static_cast<int>(ys_count), bar_size, flags, offset, ys_stride);
+//                else if (ys_type == 'g')
+//                    ImPlot::PlotBars(label_id, static_cast<const long double *>(xs_from_pyarray), static_cast<const long double *>(ys_from_pyarray), static_cast<int>(ys_count), bar_size, flags, offset, ys_stride);
+//                else if (ys_type == 'q')
+//                    ImPlot::PlotBars(label_id, static_cast<const long long *>(xs_from_pyarray), static_cast<const long long *>(ys_from_pyarray), static_cast<int>(ys_count), bar_size, flags, offset, ys_stride);
+//                // If we reach this point, the array type is not supported!
+//                else
+//                    throw std::runtime_error(std::string("Bad array type ('") + ys_type + "') for param ys");
+//            };
+//            auto PlotBars_adapt_exclude_params = [&PlotBars_adapt_c_buffers](const char * label_id, const nb::ndarray<> & xs, const nb::ndarray<> & ys, double bar_size, ImPlotBarsFlags flags = 0, int offset = 0)
+//            {
+//                PlotBars_adapt_c_buffers(label_id, xs, ys, bar_size, flags, offset, -1);
+//            };
+//
+//            PlotBars_adapt_exclude_params(label_id, xs, ys, bar_size, flags, offset);
+//        },     nb::arg("label_id"), nb::arg("xs"), nb::arg("ys"), nb::arg("bar_size"), nb::arg("flags") = 0, nb::arg("offset") = 0);
+//
+//    m.def("plot_bar_groups",
+//        [](const std::vector<std::string> & label_ids, const nb::ndarray<> & values, int group_count, double group_size = 0.67, double shift = 0, ImPlotBarGroupsFlags flags = 0)
+//        {
+//            auto PlotBarGroups_adapt_c_buffers = [](const char * const label_ids[], const nb::ndarray<> & values, int group_count, double group_size = 0.67, double shift = 0, ImPlotBarGroupsFlags flags = 0)
+//            {
+//                // Check if the array is 1D and C-contiguous
+//                if (! (values.ndim() == 1 && values.stride(0) == 1))
+//                    throw std::runtime_error("The array must be 1D and contiguous");
+//
+//                // convert nb::ndarray to C standard buffer (const)
+//                const void * values_from_pyarray = values.data();
+//                size_t values_count = values.shape(0);
+//
+//                using np_uint_l = uint64_t;
+//                using np_int_l = int64_t;
+//
+//                // Define a lambda to compute the letter code for the buffer type
+//                auto _nanobind_buffer_type_to_letter_code = [](uint8_t dtype_code, size_t sizeof_item)  -> char
+//                {
+//                    #define DCODE(T) static_cast<uint8_t>(nb::dlpack::dtype_code::T)
+//                        const std::array<std::tuple<uint8_t, size_t, char>, 11> mappings = {{
+//                            {DCODE(UInt), 1, 'B'}, {DCODE(UInt), 2, 'H'}, {DCODE(UInt), 4, 'I'}, {DCODE(UInt), 8, 'L'},
+//                            {DCODE(Int), 1, 'b'}, {DCODE(Int), 2, 'h'}, {DCODE(Int), 4, 'i'}, {DCODE(Int), 8, 'l'},
+//                            {DCODE(Float), 4, 'f'}, {DCODE(Float), 8, 'd'}, {DCODE(Float), 16, 'g'}
+//                        }};
+//                    #undef DCODE
+//                    for (const auto& [code_val, size, letter] : mappings)
+//                        if (code_val == dtype_code && size == sizeof_item)
+//                            return letter;
+//                    throw std::runtime_error("Unsupported dtype");
+//                };
+//
+//                // Compute the letter code for the buffer type
+//                uint8_t dtype_code_values = values.dtype().code;
+//                size_t sizeof_item_values = values.dtype().bits / 8;
+//                char values_type = _nanobind_buffer_type_to_letter_code(dtype_code_values, sizeof_item_values);
+//
+//                // call the correct template version by casting
+//                if (values_type == 'B')
+//                    ImPlot::PlotBarGroups(label_ids, static_cast<const uint8_t *>(values_from_pyarray), static_cast<int>(values_count), group_count, group_size, shift, flags);
+//                else if (values_type == 'b')
+//                    ImPlot::PlotBarGroups(label_ids, static_cast<const int8_t *>(values_from_pyarray), static_cast<int>(values_count), group_count, group_size, shift, flags);
+//                else if (values_type == 'H')
+//                    ImPlot::PlotBarGroups(label_ids, static_cast<const uint16_t *>(values_from_pyarray), static_cast<int>(values_count), group_count, group_size, shift, flags);
+//                else if (values_type == 'h')
+//                    ImPlot::PlotBarGroups(label_ids, static_cast<const int16_t *>(values_from_pyarray), static_cast<int>(values_count), group_count, group_size, shift, flags);
+//                else if (values_type == 'I')
+//                    ImPlot::PlotBarGroups(label_ids, static_cast<const uint32_t *>(values_from_pyarray), static_cast<int>(values_count), group_count, group_size, shift, flags);
+//                else if (values_type == 'i')
+//                    ImPlot::PlotBarGroups(label_ids, static_cast<const int32_t *>(values_from_pyarray), static_cast<int>(values_count), group_count, group_size, shift, flags);
+//                else if (values_type == 'L')
+//                    ImPlot::PlotBarGroups(label_ids, static_cast<const np_uint_l *>(values_from_pyarray), static_cast<int>(values_count), group_count, group_size, shift, flags);
+//                else if (values_type == 'l')
+//                    ImPlot::PlotBarGroups(label_ids, static_cast<const np_int_l *>(values_from_pyarray), static_cast<int>(values_count), group_count, group_size, shift, flags);
+//                else if (values_type == 'f')
+//                    ImPlot::PlotBarGroups(label_ids, static_cast<const float *>(values_from_pyarray), static_cast<int>(values_count), group_count, group_size, shift, flags);
+//                else if (values_type == 'd')
+//                    ImPlot::PlotBarGroups(label_ids, static_cast<const double *>(values_from_pyarray), static_cast<int>(values_count), group_count, group_size, shift, flags);
+//                else if (values_type == 'g')
+//                    ImPlot::PlotBarGroups(label_ids, static_cast<const long double *>(values_from_pyarray), static_cast<int>(values_count), group_count, group_size, shift, flags);
+//                else if (values_type == 'q')
+//                    ImPlot::PlotBarGroups(label_ids, static_cast<const long long *>(values_from_pyarray), static_cast<int>(values_count), group_count, group_size, shift, flags);
+//                // If we reach this point, the array type is not supported!
+//                else
+//                    throw std::runtime_error(std::string("Bad array type ('") + values_type + "') for param values");
+//            };
+//            auto PlotBarGroups_adapt_c_string_list_no_count = [&PlotBarGroups_adapt_c_buffers](const std::vector<std::string> & label_ids, const nb::ndarray<> & values, int group_count, double group_size = 0.67, double shift = 0, ImPlotBarGroupsFlags flags = 0)
+//            {
+//                std::vector<const char *> label_ids_ptrs;
+//                label_ids_ptrs.reserve(label_ids.size());
+//                for (const auto& v: label_ids)
+//                    label_ids_ptrs.push_back(v.c_str());
+//
+//                PlotBarGroups_adapt_c_buffers(label_ids_ptrs.data(), values, group_count, group_size, shift, flags);
+//            };
+//
+//            PlotBarGroups_adapt_c_string_list_no_count(label_ids, values, group_count, group_size, shift, flags);
+//        },
+//        nb::arg("label_ids"), nb::arg("values"), nb::arg("group_count"), nb::arg("group_size") = 0.67, nb::arg("shift") = 0, nb::arg("flags") = 0,
+//        "Plots a group of bars. #values is a row-major matrix with #item_count rows and #group_count cols. #label_ids should have #item_count elements.");
+//
+//    m.def("plot_error_bars",
+//        [](const char * label_id, const nb::ndarray<> & xs, const nb::ndarray<> & ys, const nb::ndarray<> & err, ImPlotErrorBarsFlags flags = 0, int offset = 0)
+//        {
+//            auto PlotErrorBars_adapt_c_buffers = [](const char * label_id, const nb::ndarray<> & xs, const nb::ndarray<> & ys, const nb::ndarray<> & err, ImPlotErrorBarsFlags flags = 0, int offset = 0, int stride = -1)
+//            {
+//                // Check if the array is 1D and C-contiguous
+//                if (! (xs.ndim() == 1 && xs.stride(0) == 1))
+//                    throw std::runtime_error("The array must be 1D and contiguous");
+//
+//                // convert nb::ndarray to C standard buffer (const)
+//                const void * xs_from_pyarray = xs.data();
+//                size_t xs_count = xs.shape(0);
+//
+//                // Check if the array is 1D and C-contiguous
+//                if (! (ys.ndim() == 1 && ys.stride(0) == 1))
+//                    throw std::runtime_error("The array must be 1D and contiguous");
+//
+//                // convert nb::ndarray to C standard buffer (const)
+//                const void * ys_from_pyarray = ys.data();
+//                size_t ys_count = ys.shape(0);
+//
+//                // Check if the array is 1D and C-contiguous
+//                if (! (err.ndim() == 1 && err.stride(0) == 1))
+//                    throw std::runtime_error("The array must be 1D and contiguous");
+//
+//                // convert nb::ndarray to C standard buffer (const)
+//                const void * err_from_pyarray = err.data();
+//                size_t err_count = err.shape(0);
+//
+//                // process stride default value (which was a sizeof in C++)
+//                int err_stride = stride;
+//                if (err_stride == -1)
+//                    err_stride = (int)err.itemsize();
+//
+//                using np_uint_l = uint64_t;
+//                using np_int_l = int64_t;
+//
+//                // Define a lambda to compute the letter code for the buffer type
+//                auto _nanobind_buffer_type_to_letter_code = [](uint8_t dtype_code, size_t sizeof_item)  -> char
+//                {
+//                    #define DCODE(T) static_cast<uint8_t>(nb::dlpack::dtype_code::T)
+//                        const std::array<std::tuple<uint8_t, size_t, char>, 11> mappings = {{
+//                            {DCODE(UInt), 1, 'B'}, {DCODE(UInt), 2, 'H'}, {DCODE(UInt), 4, 'I'}, {DCODE(UInt), 8, 'L'},
+//                            {DCODE(Int), 1, 'b'}, {DCODE(Int), 2, 'h'}, {DCODE(Int), 4, 'i'}, {DCODE(Int), 8, 'l'},
+//                            {DCODE(Float), 4, 'f'}, {DCODE(Float), 8, 'd'}, {DCODE(Float), 16, 'g'}
+//                        }};
+//                    #undef DCODE
+//                    for (const auto& [code_val, size, letter] : mappings)
+//                        if (code_val == dtype_code && size == sizeof_item)
+//                            return letter;
+//                    throw std::runtime_error("Unsupported dtype");
+//                };
+//
+//                // Compute the letter code for the buffer type
+//                uint8_t dtype_code_err = err.dtype().code;
+//                size_t sizeof_item_err = err.dtype().bits / 8;
+//                char err_type = _nanobind_buffer_type_to_letter_code(dtype_code_err, sizeof_item_err);
+//
+//                // call the correct template version by casting
+//                if (err_type == 'B')
+//                    ImPlot::PlotErrorBars(label_id, static_cast<const uint8_t *>(xs_from_pyarray), static_cast<const uint8_t *>(ys_from_pyarray), static_cast<const uint8_t *>(err_from_pyarray), static_cast<int>(err_count), flags, offset, err_stride);
+//                else if (err_type == 'b')
+//                    ImPlot::PlotErrorBars(label_id, static_cast<const int8_t *>(xs_from_pyarray), static_cast<const int8_t *>(ys_from_pyarray), static_cast<const int8_t *>(err_from_pyarray), static_cast<int>(err_count), flags, offset, err_stride);
+//                else if (err_type == 'H')
+//                    ImPlot::PlotErrorBars(label_id, static_cast<const uint16_t *>(xs_from_pyarray), static_cast<const uint16_t *>(ys_from_pyarray), static_cast<const uint16_t *>(err_from_pyarray), static_cast<int>(err_count), flags, offset, err_stride);
+//                else if (err_type == 'h')
+//                    ImPlot::PlotErrorBars(label_id, static_cast<const int16_t *>(xs_from_pyarray), static_cast<const int16_t *>(ys_from_pyarray), static_cast<const int16_t *>(err_from_pyarray), static_cast<int>(err_count), flags, offset, err_stride);
+//                else if (err_type == 'I')
+//                    ImPlot::PlotErrorBars(label_id, static_cast<const uint32_t *>(xs_from_pyarray), static_cast<const uint32_t *>(ys_from_pyarray), static_cast<const uint32_t *>(err_from_pyarray), static_cast<int>(err_count), flags, offset, err_stride);
+//                else if (err_type == 'i')
+//                    ImPlot::PlotErrorBars(label_id, static_cast<const int32_t *>(xs_from_pyarray), static_cast<const int32_t *>(ys_from_pyarray), static_cast<const int32_t *>(err_from_pyarray), static_cast<int>(err_count), flags, offset, err_stride);
+//                else if (err_type == 'L')
+//                    ImPlot::PlotErrorBars(label_id, static_cast<const np_uint_l *>(xs_from_pyarray), static_cast<const np_uint_l *>(ys_from_pyarray), static_cast<const np_uint_l *>(err_from_pyarray), static_cast<int>(err_count), flags, offset, err_stride);
+//                else if (err_type == 'l')
+//                    ImPlot::PlotErrorBars(label_id, static_cast<const np_int_l *>(xs_from_pyarray), static_cast<const np_int_l *>(ys_from_pyarray), static_cast<const np_int_l *>(err_from_pyarray), static_cast<int>(err_count), flags, offset, err_stride);
+//                else if (err_type == 'f')
+//                    ImPlot::PlotErrorBars(label_id, static_cast<const float *>(xs_from_pyarray), static_cast<const float *>(ys_from_pyarray), static_cast<const float *>(err_from_pyarray), static_cast<int>(err_count), flags, offset, err_stride);
+//                else if (err_type == 'd')
+//                    ImPlot::PlotErrorBars(label_id, static_cast<const double *>(xs_from_pyarray), static_cast<const double *>(ys_from_pyarray), static_cast<const double *>(err_from_pyarray), static_cast<int>(err_count), flags, offset, err_stride);
+//                else if (err_type == 'g')
+//                    ImPlot::PlotErrorBars(label_id, static_cast<const long double *>(xs_from_pyarray), static_cast<const long double *>(ys_from_pyarray), static_cast<const long double *>(err_from_pyarray), static_cast<int>(err_count), flags, offset, err_stride);
+//                else if (err_type == 'q')
+//                    ImPlot::PlotErrorBars(label_id, static_cast<const long long *>(xs_from_pyarray), static_cast<const long long *>(ys_from_pyarray), static_cast<const long long *>(err_from_pyarray), static_cast<int>(err_count), flags, offset, err_stride);
+//                // If we reach this point, the array type is not supported!
+//                else
+//                    throw std::runtime_error(std::string("Bad array type ('") + err_type + "') for param err");
+//            };
+//            auto PlotErrorBars_adapt_exclude_params = [&PlotErrorBars_adapt_c_buffers](const char * label_id, const nb::ndarray<> & xs, const nb::ndarray<> & ys, const nb::ndarray<> & err, ImPlotErrorBarsFlags flags = 0, int offset = 0)
+//            {
+//                PlotErrorBars_adapt_c_buffers(label_id, xs, ys, err, flags, offset, -1);
+//            };
+//
+//            PlotErrorBars_adapt_exclude_params(label_id, xs, ys, err, flags, offset);
+//        },     nb::arg("label_id"), nb::arg("xs"), nb::arg("ys"), nb::arg("err"), nb::arg("flags") = 0, nb::arg("offset") = 0);
+//
+//    m.def("plot_error_bars",
+//        [](const char * label_id, const nb::ndarray<> & xs, const nb::ndarray<> & ys, const nb::ndarray<> & neg, const nb::ndarray<> & pos, ImPlotErrorBarsFlags flags = 0, int offset = 0)
+//        {
+//            auto PlotErrorBars_adapt_c_buffers = [](const char * label_id, const nb::ndarray<> & xs, const nb::ndarray<> & ys, const nb::ndarray<> & neg, const nb::ndarray<> & pos, ImPlotErrorBarsFlags flags = 0, int offset = 0, int stride = -1)
+//            {
+//                // Check if the array is 1D and C-contiguous
+//                if (! (xs.ndim() == 1 && xs.stride(0) == 1))
+//                    throw std::runtime_error("The array must be 1D and contiguous");
+//
+//                // convert nb::ndarray to C standard buffer (const)
+//                const void * xs_from_pyarray = xs.data();
+//                size_t xs_count = xs.shape(0);
+//
+//                // Check if the array is 1D and C-contiguous
+//                if (! (ys.ndim() == 1 && ys.stride(0) == 1))
+//                    throw std::runtime_error("The array must be 1D and contiguous");
+//
+//                // convert nb::ndarray to C standard buffer (const)
+//                const void * ys_from_pyarray = ys.data();
+//                size_t ys_count = ys.shape(0);
+//
+//                // Check if the array is 1D and C-contiguous
+//                if (! (neg.ndim() == 1 && neg.stride(0) == 1))
+//                    throw std::runtime_error("The array must be 1D and contiguous");
+//
+//                // convert nb::ndarray to C standard buffer (const)
+//                const void * neg_from_pyarray = neg.data();
+//                size_t neg_count = neg.shape(0);
+//
+//                // Check if the array is 1D and C-contiguous
+//                if (! (pos.ndim() == 1 && pos.stride(0) == 1))
+//                    throw std::runtime_error("The array must be 1D and contiguous");
+//
+//                // convert nb::ndarray to C standard buffer (const)
+//                const void * pos_from_pyarray = pos.data();
+//                size_t pos_count = pos.shape(0);
+//
+//                // process stride default value (which was a sizeof in C++)
+//                int pos_stride = stride;
+//                if (pos_stride == -1)
+//                    pos_stride = (int)pos.itemsize();
+//
+//                using np_uint_l = uint64_t;
+//                using np_int_l = int64_t;
+//
+//                // Define a lambda to compute the letter code for the buffer type
+//                auto _nanobind_buffer_type_to_letter_code = [](uint8_t dtype_code, size_t sizeof_item)  -> char
+//                {
+//                    #define DCODE(T) static_cast<uint8_t>(nb::dlpack::dtype_code::T)
+//                        const std::array<std::tuple<uint8_t, size_t, char>, 11> mappings = {{
+//                            {DCODE(UInt), 1, 'B'}, {DCODE(UInt), 2, 'H'}, {DCODE(UInt), 4, 'I'}, {DCODE(UInt), 8, 'L'},
+//                            {DCODE(Int), 1, 'b'}, {DCODE(Int), 2, 'h'}, {DCODE(Int), 4, 'i'}, {DCODE(Int), 8, 'l'},
+//                            {DCODE(Float), 4, 'f'}, {DCODE(Float), 8, 'd'}, {DCODE(Float), 16, 'g'}
+//                        }};
+//                    #undef DCODE
+//                    for (const auto& [code_val, size, letter] : mappings)
+//                        if (code_val == dtype_code && size == sizeof_item)
+//                            return letter;
+//                    throw std::runtime_error("Unsupported dtype");
+//                };
+//
+//                // Compute the letter code for the buffer type
+//                uint8_t dtype_code_pos = pos.dtype().code;
+//                size_t sizeof_item_pos = pos.dtype().bits / 8;
+//                char pos_type = _nanobind_buffer_type_to_letter_code(dtype_code_pos, sizeof_item_pos);
+//
+//                // call the correct template version by casting
+//                if (pos_type == 'B')
+//                    ImPlot::PlotErrorBars(label_id, static_cast<const uint8_t *>(xs_from_pyarray), static_cast<const uint8_t *>(ys_from_pyarray), static_cast<const uint8_t *>(neg_from_pyarray), static_cast<const uint8_t *>(pos_from_pyarray), static_cast<int>(pos_count), flags, offset, pos_stride);
+//                else if (pos_type == 'b')
+//                    ImPlot::PlotErrorBars(label_id, static_cast<const int8_t *>(xs_from_pyarray), static_cast<const int8_t *>(ys_from_pyarray), static_cast<const int8_t *>(neg_from_pyarray), static_cast<const int8_t *>(pos_from_pyarray), static_cast<int>(pos_count), flags, offset, pos_stride);
+//                else if (pos_type == 'H')
+//                    ImPlot::PlotErrorBars(label_id, static_cast<const uint16_t *>(xs_from_pyarray), static_cast<const uint16_t *>(ys_from_pyarray), static_cast<const uint16_t *>(neg_from_pyarray), static_cast<const uint16_t *>(pos_from_pyarray), static_cast<int>(pos_count), flags, offset, pos_stride);
+//                else if (pos_type == 'h')
+//                    ImPlot::PlotErrorBars(label_id, static_cast<const int16_t *>(xs_from_pyarray), static_cast<const int16_t *>(ys_from_pyarray), static_cast<const int16_t *>(neg_from_pyarray), static_cast<const int16_t *>(pos_from_pyarray), static_cast<int>(pos_count), flags, offset, pos_stride);
+//                else if (pos_type == 'I')
+//                    ImPlot::PlotErrorBars(label_id, static_cast<const uint32_t *>(xs_from_pyarray), static_cast<const uint32_t *>(ys_from_pyarray), static_cast<const uint32_t *>(neg_from_pyarray), static_cast<const uint32_t *>(pos_from_pyarray), static_cast<int>(pos_count), flags, offset, pos_stride);
+//                else if (pos_type == 'i')
+//                    ImPlot::PlotErrorBars(label_id, static_cast<const int32_t *>(xs_from_pyarray), static_cast<const int32_t *>(ys_from_pyarray), static_cast<const int32_t *>(neg_from_pyarray), static_cast<const int32_t *>(pos_from_pyarray), static_cast<int>(pos_count), flags, offset, pos_stride);
+//                else if (pos_type == 'L')
+//                    ImPlot::PlotErrorBars(label_id, static_cast<const np_uint_l *>(xs_from_pyarray), static_cast<const np_uint_l *>(ys_from_pyarray), static_cast<const np_uint_l *>(neg_from_pyarray), static_cast<const np_uint_l *>(pos_from_pyarray), static_cast<int>(pos_count), flags, offset, pos_stride);
+//                else if (pos_type == 'l')
+//                    ImPlot::PlotErrorBars(label_id, static_cast<const np_int_l *>(xs_from_pyarray), static_cast<const np_int_l *>(ys_from_pyarray), static_cast<const np_int_l *>(neg_from_pyarray), static_cast<const np_int_l *>(pos_from_pyarray), static_cast<int>(pos_count), flags, offset, pos_stride);
+//                else if (pos_type == 'f')
+//                    ImPlot::PlotErrorBars(label_id, static_cast<const float *>(xs_from_pyarray), static_cast<const float *>(ys_from_pyarray), static_cast<const float *>(neg_from_pyarray), static_cast<const float *>(pos_from_pyarray), static_cast<int>(pos_count), flags, offset, pos_stride);
+//                else if (pos_type == 'd')
+//                    ImPlot::PlotErrorBars(label_id, static_cast<const double *>(xs_from_pyarray), static_cast<const double *>(ys_from_pyarray), static_cast<const double *>(neg_from_pyarray), static_cast<const double *>(pos_from_pyarray), static_cast<int>(pos_count), flags, offset, pos_stride);
+//                else if (pos_type == 'g')
+//                    ImPlot::PlotErrorBars(label_id, static_cast<const long double *>(xs_from_pyarray), static_cast<const long double *>(ys_from_pyarray), static_cast<const long double *>(neg_from_pyarray), static_cast<const long double *>(pos_from_pyarray), static_cast<int>(pos_count), flags, offset, pos_stride);
+//                else if (pos_type == 'q')
+//                    ImPlot::PlotErrorBars(label_id, static_cast<const long long *>(xs_from_pyarray), static_cast<const long long *>(ys_from_pyarray), static_cast<const long long *>(neg_from_pyarray), static_cast<const long long *>(pos_from_pyarray), static_cast<int>(pos_count), flags, offset, pos_stride);
+//                // If we reach this point, the array type is not supported!
+//                else
+//                    throw std::runtime_error(std::string("Bad array type ('") + pos_type + "') for param pos");
+//            };
+//            auto PlotErrorBars_adapt_exclude_params = [&PlotErrorBars_adapt_c_buffers](const char * label_id, const nb::ndarray<> & xs, const nb::ndarray<> & ys, const nb::ndarray<> & neg, const nb::ndarray<> & pos, ImPlotErrorBarsFlags flags = 0, int offset = 0)
+//            {
+//                PlotErrorBars_adapt_c_buffers(label_id, xs, ys, neg, pos, flags, offset, -1);
+//            };
+//
+//            PlotErrorBars_adapt_exclude_params(label_id, xs, ys, neg, pos, flags, offset);
+//        },     nb::arg("label_id"), nb::arg("xs"), nb::arg("ys"), nb::arg("neg"), nb::arg("pos"), nb::arg("flags") = 0, nb::arg("offset") = 0);
+//
+//    m.def("plot_stems",
+//        [](const char * label_id, const nb::ndarray<> & values, double ref = 0, double scale = 1, double start = 0, ImPlotStemsFlags flags = 0, int offset = 0)
+//        {
+//            auto PlotStems_adapt_c_buffers = [](const char * label_id, const nb::ndarray<> & values, double ref = 0, double scale = 1, double start = 0, ImPlotStemsFlags flags = 0, int offset = 0, int stride = -1)
+//            {
+//                // Check if the array is 1D and C-contiguous
+//                if (! (values.ndim() == 1 && values.stride(0) == 1))
+//                    throw std::runtime_error("The array must be 1D and contiguous");
+//
+//                // convert nb::ndarray to C standard buffer (const)
+//                const void * values_from_pyarray = values.data();
+//                size_t values_count = values.shape(0);
+//
+//                // process stride default value (which was a sizeof in C++)
+//                int values_stride = stride;
+//                if (values_stride == -1)
+//                    values_stride = (int)values.itemsize();
+//
+//                using np_uint_l = uint64_t;
+//                using np_int_l = int64_t;
+//
+//                // Define a lambda to compute the letter code for the buffer type
+//                auto _nanobind_buffer_type_to_letter_code = [](uint8_t dtype_code, size_t sizeof_item)  -> char
+//                {
+//                    #define DCODE(T) static_cast<uint8_t>(nb::dlpack::dtype_code::T)
+//                        const std::array<std::tuple<uint8_t, size_t, char>, 11> mappings = {{
+//                            {DCODE(UInt), 1, 'B'}, {DCODE(UInt), 2, 'H'}, {DCODE(UInt), 4, 'I'}, {DCODE(UInt), 8, 'L'},
+//                            {DCODE(Int), 1, 'b'}, {DCODE(Int), 2, 'h'}, {DCODE(Int), 4, 'i'}, {DCODE(Int), 8, 'l'},
+//                            {DCODE(Float), 4, 'f'}, {DCODE(Float), 8, 'd'}, {DCODE(Float), 16, 'g'}
+//                        }};
+//                    #undef DCODE
+//                    for (const auto& [code_val, size, letter] : mappings)
+//                        if (code_val == dtype_code && size == sizeof_item)
+//                            return letter;
+//                    throw std::runtime_error("Unsupported dtype");
+//                };
+//
+//                // Compute the letter code for the buffer type
+//                uint8_t dtype_code_values = values.dtype().code;
+//                size_t sizeof_item_values = values.dtype().bits / 8;
+//                char values_type = _nanobind_buffer_type_to_letter_code(dtype_code_values, sizeof_item_values);
+//
+//                // call the correct template version by casting
+//                if (values_type == 'B')
+//                    ImPlot::PlotStems(label_id, static_cast<const uint8_t *>(values_from_pyarray), static_cast<int>(values_count), ref, scale, start, flags, offset, values_stride);
+//                else if (values_type == 'b')
+//                    ImPlot::PlotStems(label_id, static_cast<const int8_t *>(values_from_pyarray), static_cast<int>(values_count), ref, scale, start, flags, offset, values_stride);
+//                else if (values_type == 'H')
+//                    ImPlot::PlotStems(label_id, static_cast<const uint16_t *>(values_from_pyarray), static_cast<int>(values_count), ref, scale, start, flags, offset, values_stride);
+//                else if (values_type == 'h')
+//                    ImPlot::PlotStems(label_id, static_cast<const int16_t *>(values_from_pyarray), static_cast<int>(values_count), ref, scale, start, flags, offset, values_stride);
+//                else if (values_type == 'I')
+//                    ImPlot::PlotStems(label_id, static_cast<const uint32_t *>(values_from_pyarray), static_cast<int>(values_count), ref, scale, start, flags, offset, values_stride);
+//                else if (values_type == 'i')
+//                    ImPlot::PlotStems(label_id, static_cast<const int32_t *>(values_from_pyarray), static_cast<int>(values_count), ref, scale, start, flags, offset, values_stride);
+//                else if (values_type == 'L')
+//                    ImPlot::PlotStems(label_id, static_cast<const np_uint_l *>(values_from_pyarray), static_cast<int>(values_count), ref, scale, start, flags, offset, values_stride);
+//                else if (values_type == 'l')
+//                    ImPlot::PlotStems(label_id, static_cast<const np_int_l *>(values_from_pyarray), static_cast<int>(values_count), ref, scale, start, flags, offset, values_stride);
+//                else if (values_type == 'f')
+//                    ImPlot::PlotStems(label_id, static_cast<const float *>(values_from_pyarray), static_cast<int>(values_count), ref, scale, start, flags, offset, values_stride);
+//                else if (values_type == 'd')
+//                    ImPlot::PlotStems(label_id, static_cast<const double *>(values_from_pyarray), static_cast<int>(values_count), ref, scale, start, flags, offset, values_stride);
+//                else if (values_type == 'g')
+//                    ImPlot::PlotStems(label_id, static_cast<const long double *>(values_from_pyarray), static_cast<int>(values_count), ref, scale, start, flags, offset, values_stride);
+//                else if (values_type == 'q')
+//                    ImPlot::PlotStems(label_id, static_cast<const long long *>(values_from_pyarray), static_cast<int>(values_count), ref, scale, start, flags, offset, values_stride);
+//                // If we reach this point, the array type is not supported!
+//                else
+//                    throw std::runtime_error(std::string("Bad array type ('") + values_type + "') for param values");
+//            };
+//            auto PlotStems_adapt_exclude_params = [&PlotStems_adapt_c_buffers](const char * label_id, const nb::ndarray<> & values, double ref = 0, double scale = 1, double start = 0, ImPlotStemsFlags flags = 0, int offset = 0)
+//            {
+//                PlotStems_adapt_c_buffers(label_id, values, ref, scale, start, flags, offset, -1);
+//            };
+//
+//            PlotStems_adapt_exclude_params(label_id, values, ref, scale, start, flags, offset);
+//        },     nb::arg("label_id"), nb::arg("values"), nb::arg("ref") = 0, nb::arg("scale") = 1, nb::arg("start") = 0, nb::arg("flags") = 0, nb::arg("offset") = 0);
+//
+//    m.def("plot_stems",
+//        [](const char * label_id, const nb::ndarray<> & xs, const nb::ndarray<> & ys, double ref = 0, ImPlotStemsFlags flags = 0, int offset = 0)
+//        {
+//            auto PlotStems_adapt_c_buffers = [](const char * label_id, const nb::ndarray<> & xs, const nb::ndarray<> & ys, double ref = 0, ImPlotStemsFlags flags = 0, int offset = 0, int stride = -1)
+//            {
+//                // Check if the array is 1D and C-contiguous
+//                if (! (xs.ndim() == 1 && xs.stride(0) == 1))
+//                    throw std::runtime_error("The array must be 1D and contiguous");
+//
+//                // convert nb::ndarray to C standard buffer (const)
+//                const void * xs_from_pyarray = xs.data();
+//                size_t xs_count = xs.shape(0);
+//
+//                // Check if the array is 1D and C-contiguous
+//                if (! (ys.ndim() == 1 && ys.stride(0) == 1))
+//                    throw std::runtime_error("The array must be 1D and contiguous");
+//
+//                // convert nb::ndarray to C standard buffer (const)
+//                const void * ys_from_pyarray = ys.data();
+//                size_t ys_count = ys.shape(0);
+//
+//                // process stride default value (which was a sizeof in C++)
+//                int ys_stride = stride;
+//                if (ys_stride == -1)
+//                    ys_stride = (int)ys.itemsize();
+//
+//                using np_uint_l = uint64_t;
+//                using np_int_l = int64_t;
+//
+//                // Define a lambda to compute the letter code for the buffer type
+//                auto _nanobind_buffer_type_to_letter_code = [](uint8_t dtype_code, size_t sizeof_item)  -> char
+//                {
+//                    #define DCODE(T) static_cast<uint8_t>(nb::dlpack::dtype_code::T)
+//                        const std::array<std::tuple<uint8_t, size_t, char>, 11> mappings = {{
+//                            {DCODE(UInt), 1, 'B'}, {DCODE(UInt), 2, 'H'}, {DCODE(UInt), 4, 'I'}, {DCODE(UInt), 8, 'L'},
+//                            {DCODE(Int), 1, 'b'}, {DCODE(Int), 2, 'h'}, {DCODE(Int), 4, 'i'}, {DCODE(Int), 8, 'l'},
+//                            {DCODE(Float), 4, 'f'}, {DCODE(Float), 8, 'd'}, {DCODE(Float), 16, 'g'}
+//                        }};
+//                    #undef DCODE
+//                    for (const auto& [code_val, size, letter] : mappings)
+//                        if (code_val == dtype_code && size == sizeof_item)
+//                            return letter;
+//                    throw std::runtime_error("Unsupported dtype");
+//                };
+//
+//                // Compute the letter code for the buffer type
+//                uint8_t dtype_code_ys = ys.dtype().code;
+//                size_t sizeof_item_ys = ys.dtype().bits / 8;
+//                char ys_type = _nanobind_buffer_type_to_letter_code(dtype_code_ys, sizeof_item_ys);
+//
+//                // call the correct template version by casting
+//                if (ys_type == 'B')
+//                    ImPlot::PlotStems(label_id, static_cast<const uint8_t *>(xs_from_pyarray), static_cast<const uint8_t *>(ys_from_pyarray), static_cast<int>(ys_count), ref, flags, offset, ys_stride);
+//                else if (ys_type == 'b')
+//                    ImPlot::PlotStems(label_id, static_cast<const int8_t *>(xs_from_pyarray), static_cast<const int8_t *>(ys_from_pyarray), static_cast<int>(ys_count), ref, flags, offset, ys_stride);
+//                else if (ys_type == 'H')
+//                    ImPlot::PlotStems(label_id, static_cast<const uint16_t *>(xs_from_pyarray), static_cast<const uint16_t *>(ys_from_pyarray), static_cast<int>(ys_count), ref, flags, offset, ys_stride);
+//                else if (ys_type == 'h')
+//                    ImPlot::PlotStems(label_id, static_cast<const int16_t *>(xs_from_pyarray), static_cast<const int16_t *>(ys_from_pyarray), static_cast<int>(ys_count), ref, flags, offset, ys_stride);
+//                else if (ys_type == 'I')
+//                    ImPlot::PlotStems(label_id, static_cast<const uint32_t *>(xs_from_pyarray), static_cast<const uint32_t *>(ys_from_pyarray), static_cast<int>(ys_count), ref, flags, offset, ys_stride);
+//                else if (ys_type == 'i')
+//                    ImPlot::PlotStems(label_id, static_cast<const int32_t *>(xs_from_pyarray), static_cast<const int32_t *>(ys_from_pyarray), static_cast<int>(ys_count), ref, flags, offset, ys_stride);
+//                else if (ys_type == 'L')
+//                    ImPlot::PlotStems(label_id, static_cast<const np_uint_l *>(xs_from_pyarray), static_cast<const np_uint_l *>(ys_from_pyarray), static_cast<int>(ys_count), ref, flags, offset, ys_stride);
+//                else if (ys_type == 'l')
+//                    ImPlot::PlotStems(label_id, static_cast<const np_int_l *>(xs_from_pyarray), static_cast<const np_int_l *>(ys_from_pyarray), static_cast<int>(ys_count), ref, flags, offset, ys_stride);
+//                else if (ys_type == 'f')
+//                    ImPlot::PlotStems(label_id, static_cast<const float *>(xs_from_pyarray), static_cast<const float *>(ys_from_pyarray), static_cast<int>(ys_count), ref, flags, offset, ys_stride);
+//                else if (ys_type == 'd')
+//                    ImPlot::PlotStems(label_id, static_cast<const double *>(xs_from_pyarray), static_cast<const double *>(ys_from_pyarray), static_cast<int>(ys_count), ref, flags, offset, ys_stride);
+//                else if (ys_type == 'g')
+//                    ImPlot::PlotStems(label_id, static_cast<const long double *>(xs_from_pyarray), static_cast<const long double *>(ys_from_pyarray), static_cast<int>(ys_count), ref, flags, offset, ys_stride);
+//                else if (ys_type == 'q')
+//                    ImPlot::PlotStems(label_id, static_cast<const long long *>(xs_from_pyarray), static_cast<const long long *>(ys_from_pyarray), static_cast<int>(ys_count), ref, flags, offset, ys_stride);
+//                // If we reach this point, the array type is not supported!
+//                else
+//                    throw std::runtime_error(std::string("Bad array type ('") + ys_type + "') for param ys");
+//            };
+//            auto PlotStems_adapt_exclude_params = [&PlotStems_adapt_c_buffers](const char * label_id, const nb::ndarray<> & xs, const nb::ndarray<> & ys, double ref = 0, ImPlotStemsFlags flags = 0, int offset = 0)
+//            {
+//                PlotStems_adapt_c_buffers(label_id, xs, ys, ref, flags, offset, -1);
+//            };
+//
+//            PlotStems_adapt_exclude_params(label_id, xs, ys, ref, flags, offset);
+//        },     nb::arg("label_id"), nb::arg("xs"), nb::arg("ys"), nb::arg("ref") = 0, nb::arg("flags") = 0, nb::arg("offset") = 0);
+//
+//    m.def("plot_inf_lines",
+//        [](const char * label_id, const nb::ndarray<> & values, ImPlotInfLinesFlags flags = 0, int offset = 0)
+//        {
+//            auto PlotInfLines_adapt_c_buffers = [](const char * label_id, const nb::ndarray<> & values, ImPlotInfLinesFlags flags = 0, int offset = 0, int stride = -1)
+//            {
+//                // Check if the array is 1D and C-contiguous
+//                if (! (values.ndim() == 1 && values.stride(0) == 1))
+//                    throw std::runtime_error("The array must be 1D and contiguous");
+//
+//                // convert nb::ndarray to C standard buffer (const)
+//                const void * values_from_pyarray = values.data();
+//                size_t values_count = values.shape(0);
+//
+//                // process stride default value (which was a sizeof in C++)
+//                int values_stride = stride;
+//                if (values_stride == -1)
+//                    values_stride = (int)values.itemsize();
+//
+//                using np_uint_l = uint64_t;
+//                using np_int_l = int64_t;
+//
+//                // Define a lambda to compute the letter code for the buffer type
+//                auto _nanobind_buffer_type_to_letter_code = [](uint8_t dtype_code, size_t sizeof_item)  -> char
+//                {
+//                    #define DCODE(T) static_cast<uint8_t>(nb::dlpack::dtype_code::T)
+//                        const std::array<std::tuple<uint8_t, size_t, char>, 11> mappings = {{
+//                            {DCODE(UInt), 1, 'B'}, {DCODE(UInt), 2, 'H'}, {DCODE(UInt), 4, 'I'}, {DCODE(UInt), 8, 'L'},
+//                            {DCODE(Int), 1, 'b'}, {DCODE(Int), 2, 'h'}, {DCODE(Int), 4, 'i'}, {DCODE(Int), 8, 'l'},
+//                            {DCODE(Float), 4, 'f'}, {DCODE(Float), 8, 'd'}, {DCODE(Float), 16, 'g'}
+//                        }};
+//                    #undef DCODE
+//                    for (const auto& [code_val, size, letter] : mappings)
+//                        if (code_val == dtype_code && size == sizeof_item)
+//                            return letter;
+//                    throw std::runtime_error("Unsupported dtype");
+//                };
+//
+//                // Compute the letter code for the buffer type
+//                uint8_t dtype_code_values = values.dtype().code;
+//                size_t sizeof_item_values = values.dtype().bits / 8;
+//                char values_type = _nanobind_buffer_type_to_letter_code(dtype_code_values, sizeof_item_values);
+//
+//                // call the correct template version by casting
+//                if (values_type == 'B')
+//                    ImPlot::PlotInfLines(label_id, static_cast<const uint8_t *>(values_from_pyarray), static_cast<int>(values_count), flags, offset, values_stride);
+//                else if (values_type == 'b')
+//                    ImPlot::PlotInfLines(label_id, static_cast<const int8_t *>(values_from_pyarray), static_cast<int>(values_count), flags, offset, values_stride);
+//                else if (values_type == 'H')
+//                    ImPlot::PlotInfLines(label_id, static_cast<const uint16_t *>(values_from_pyarray), static_cast<int>(values_count), flags, offset, values_stride);
+//                else if (values_type == 'h')
+//                    ImPlot::PlotInfLines(label_id, static_cast<const int16_t *>(values_from_pyarray), static_cast<int>(values_count), flags, offset, values_stride);
+//                else if (values_type == 'I')
+//                    ImPlot::PlotInfLines(label_id, static_cast<const uint32_t *>(values_from_pyarray), static_cast<int>(values_count), flags, offset, values_stride);
+//                else if (values_type == 'i')
+//                    ImPlot::PlotInfLines(label_id, static_cast<const int32_t *>(values_from_pyarray), static_cast<int>(values_count), flags, offset, values_stride);
+//                else if (values_type == 'L')
+//                    ImPlot::PlotInfLines(label_id, static_cast<const np_uint_l *>(values_from_pyarray), static_cast<int>(values_count), flags, offset, values_stride);
+//                else if (values_type == 'l')
+//                    ImPlot::PlotInfLines(label_id, static_cast<const np_int_l *>(values_from_pyarray), static_cast<int>(values_count), flags, offset, values_stride);
+//                else if (values_type == 'f')
+//                    ImPlot::PlotInfLines(label_id, static_cast<const float *>(values_from_pyarray), static_cast<int>(values_count), flags, offset, values_stride);
+//                else if (values_type == 'd')
+//                    ImPlot::PlotInfLines(label_id, static_cast<const double *>(values_from_pyarray), static_cast<int>(values_count), flags, offset, values_stride);
+//                else if (values_type == 'g')
+//                    ImPlot::PlotInfLines(label_id, static_cast<const long double *>(values_from_pyarray), static_cast<int>(values_count), flags, offset, values_stride);
+//                else if (values_type == 'q')
+//                    ImPlot::PlotInfLines(label_id, static_cast<const long long *>(values_from_pyarray), static_cast<int>(values_count), flags, offset, values_stride);
+//                // If we reach this point, the array type is not supported!
+//                else
+//                    throw std::runtime_error(std::string("Bad array type ('") + values_type + "') for param values");
+//            };
+//            auto PlotInfLines_adapt_exclude_params = [&PlotInfLines_adapt_c_buffers](const char * label_id, const nb::ndarray<> & values, ImPlotInfLinesFlags flags = 0, int offset = 0)
+//            {
+//                PlotInfLines_adapt_c_buffers(label_id, values, flags, offset, -1);
+//            };
+//
+//            PlotInfLines_adapt_exclude_params(label_id, values, flags, offset);
+//        },
+//        nb::arg("label_id"), nb::arg("values"), nb::arg("flags") = 0, nb::arg("offset") = 0,
+//        "Plots infinite vertical or horizontal lines (e.g. for references or asymptotes).");
+//
+//    m.def("plot_pie_chart",
+//        [](const std::vector<std::string> & label_ids, const nb::ndarray<> & values, double x, double y, double radius, const char * label_fmt = "%.1f", double angle0 = 90, ImPlotPieChartFlags flags = 0)
+//        {
+//            auto PlotPieChart_adapt_c_buffers = [](const char * const label_ids[], const nb::ndarray<> & values, double x, double y, double radius, const char * label_fmt = "%.1f", double angle0 = 90, ImPlotPieChartFlags flags = 0)
+//            {
+//                // Check if the array is 1D and C-contiguous
+//                if (! (values.ndim() == 1 && values.stride(0) == 1))
+//                    throw std::runtime_error("The array must be 1D and contiguous");
+//
+//                // convert nb::ndarray to C standard buffer (const)
+//                const void * values_from_pyarray = values.data();
+//                size_t values_count = values.shape(0);
+//
+//                using np_uint_l = uint64_t;
+//                using np_int_l = int64_t;
+//
+//                // Define a lambda to compute the letter code for the buffer type
+//                auto _nanobind_buffer_type_to_letter_code = [](uint8_t dtype_code, size_t sizeof_item)  -> char
+//                {
+//                    #define DCODE(T) static_cast<uint8_t>(nb::dlpack::dtype_code::T)
+//                        const std::array<std::tuple<uint8_t, size_t, char>, 11> mappings = {{
+//                            {DCODE(UInt), 1, 'B'}, {DCODE(UInt), 2, 'H'}, {DCODE(UInt), 4, 'I'}, {DCODE(UInt), 8, 'L'},
+//                            {DCODE(Int), 1, 'b'}, {DCODE(Int), 2, 'h'}, {DCODE(Int), 4, 'i'}, {DCODE(Int), 8, 'l'},
+//                            {DCODE(Float), 4, 'f'}, {DCODE(Float), 8, 'd'}, {DCODE(Float), 16, 'g'}
+//                        }};
+//                    #undef DCODE
+//                    for (const auto& [code_val, size, letter] : mappings)
+//                        if (code_val == dtype_code && size == sizeof_item)
+//                            return letter;
+//                    throw std::runtime_error("Unsupported dtype");
+//                };
+//
+//                // Compute the letter code for the buffer type
+//                uint8_t dtype_code_values = values.dtype().code;
+//                size_t sizeof_item_values = values.dtype().bits / 8;
+//                char values_type = _nanobind_buffer_type_to_letter_code(dtype_code_values, sizeof_item_values);
+//
+//                // call the correct template version by casting
+//                if (values_type == 'B')
+//                    ImPlot::PlotPieChart(label_ids, static_cast<const uint8_t *>(values_from_pyarray), static_cast<int>(values_count), x, y, radius, label_fmt, angle0, flags);
+//                else if (values_type == 'b')
+//                    ImPlot::PlotPieChart(label_ids, static_cast<const int8_t *>(values_from_pyarray), static_cast<int>(values_count), x, y, radius, label_fmt, angle0, flags);
+//                else if (values_type == 'H')
+//                    ImPlot::PlotPieChart(label_ids, static_cast<const uint16_t *>(values_from_pyarray), static_cast<int>(values_count), x, y, radius, label_fmt, angle0, flags);
+//                else if (values_type == 'h')
+//                    ImPlot::PlotPieChart(label_ids, static_cast<const int16_t *>(values_from_pyarray), static_cast<int>(values_count), x, y, radius, label_fmt, angle0, flags);
+//                else if (values_type == 'I')
+//                    ImPlot::PlotPieChart(label_ids, static_cast<const uint32_t *>(values_from_pyarray), static_cast<int>(values_count), x, y, radius, label_fmt, angle0, flags);
+//                else if (values_type == 'i')
+//                    ImPlot::PlotPieChart(label_ids, static_cast<const int32_t *>(values_from_pyarray), static_cast<int>(values_count), x, y, radius, label_fmt, angle0, flags);
+//                else if (values_type == 'L')
+//                    ImPlot::PlotPieChart(label_ids, static_cast<const np_uint_l *>(values_from_pyarray), static_cast<int>(values_count), x, y, radius, label_fmt, angle0, flags);
+//                else if (values_type == 'l')
+//                    ImPlot::PlotPieChart(label_ids, static_cast<const np_int_l *>(values_from_pyarray), static_cast<int>(values_count), x, y, radius, label_fmt, angle0, flags);
+//                else if (values_type == 'f')
+//                    ImPlot::PlotPieChart(label_ids, static_cast<const float *>(values_from_pyarray), static_cast<int>(values_count), x, y, radius, label_fmt, angle0, flags);
+//                else if (values_type == 'd')
+//                    ImPlot::PlotPieChart(label_ids, static_cast<const double *>(values_from_pyarray), static_cast<int>(values_count), x, y, radius, label_fmt, angle0, flags);
+//                else if (values_type == 'g')
+//                    ImPlot::PlotPieChart(label_ids, static_cast<const long double *>(values_from_pyarray), static_cast<int>(values_count), x, y, radius, label_fmt, angle0, flags);
+//                else if (values_type == 'q')
+//                    ImPlot::PlotPieChart(label_ids, static_cast<const long long *>(values_from_pyarray), static_cast<int>(values_count), x, y, radius, label_fmt, angle0, flags);
+//                // If we reach this point, the array type is not supported!
+//                else
+//                    throw std::runtime_error(std::string("Bad array type ('") + values_type + "') for param values");
+//            };
+//            auto PlotPieChart_adapt_c_string_list_no_count = [&PlotPieChart_adapt_c_buffers](const std::vector<std::string> & label_ids, const nb::ndarray<> & values, double x, double y, double radius, const char * label_fmt = "%.1f", double angle0 = 90, ImPlotPieChartFlags flags = 0)
+//            {
+//                std::vector<const char *> label_ids_ptrs;
+//                label_ids_ptrs.reserve(label_ids.size());
+//                for (const auto& v: label_ids)
+//                    label_ids_ptrs.push_back(v.c_str());
+//
+//                PlotPieChart_adapt_c_buffers(label_ids_ptrs.data(), values, x, y, radius, label_fmt, angle0, flags);
+//            };
+//
+//            PlotPieChart_adapt_c_string_list_no_count(label_ids, values, x, y, radius, label_fmt, angle0, flags);
+//        },     nb::arg("label_ids"), nb::arg("values"), nb::arg("x"), nb::arg("y"), nb::arg("radius"), nb::arg("label_fmt") = "%.1f", nb::arg("angle0") = 90, nb::arg("flags") = 0);
+//
+//    m.def("plot_histogram",
+//        [](const char * label_id, const nb::ndarray<> & values, int bins = ImPlotBin_Sturges, double bar_scale = 1.0, const std::optional<const ImPlotRange> & range = std::nullopt, ImPlotHistogramFlags flags = 0) -> double
+//        {
+//            auto PlotHistogram_adapt_c_buffers = [](const char * label_id, const nb::ndarray<> & values, int bins = ImPlotBin_Sturges, double bar_scale = 1.0, ImPlotRange range = ImPlotRange(), ImPlotHistogramFlags flags = 0) -> double
+//            {
+//                // Check if the array is 1D and C-contiguous
+//                if (! (values.ndim() == 1 && values.stride(0) == 1))
+//                    throw std::runtime_error("The array must be 1D and contiguous");
+//
+//                // convert nb::ndarray to C standard buffer (const)
+//                const void * values_from_pyarray = values.data();
+//                size_t values_count = values.shape(0);
+//
+//                using np_uint_l = uint64_t;
+//                using np_int_l = int64_t;
+//
+//                // Define a lambda to compute the letter code for the buffer type
+//                auto _nanobind_buffer_type_to_letter_code = [](uint8_t dtype_code, size_t sizeof_item)  -> char
+//                {
+//                    #define DCODE(T) static_cast<uint8_t>(nb::dlpack::dtype_code::T)
+//                        const std::array<std::tuple<uint8_t, size_t, char>, 11> mappings = {{
+//                            {DCODE(UInt), 1, 'B'}, {DCODE(UInt), 2, 'H'}, {DCODE(UInt), 4, 'I'}, {DCODE(UInt), 8, 'L'},
+//                            {DCODE(Int), 1, 'b'}, {DCODE(Int), 2, 'h'}, {DCODE(Int), 4, 'i'}, {DCODE(Int), 8, 'l'},
+//                            {DCODE(Float), 4, 'f'}, {DCODE(Float), 8, 'd'}, {DCODE(Float), 16, 'g'}
+//                        }};
+//                    #undef DCODE
+//                    for (const auto& [code_val, size, letter] : mappings)
+//                        if (code_val == dtype_code && size == sizeof_item)
+//                            return letter;
+//                    throw std::runtime_error("Unsupported dtype");
+//                };
+//
+//                // Compute the letter code for the buffer type
+//                uint8_t dtype_code_values = values.dtype().code;
+//                size_t sizeof_item_values = values.dtype().bits / 8;
+//                char values_type = _nanobind_buffer_type_to_letter_code(dtype_code_values, sizeof_item_values);
+//
+//                // call the correct template version by casting
+//                if (values_type == 'B')
+//                    return ImPlot::PlotHistogram(label_id, static_cast<const uint8_t *>(values_from_pyarray), static_cast<int>(values_count), bins, bar_scale, range, flags);
+//                else if (values_type == 'b')
+//                    return ImPlot::PlotHistogram(label_id, static_cast<const int8_t *>(values_from_pyarray), static_cast<int>(values_count), bins, bar_scale, range, flags);
+//                else if (values_type == 'H')
+//                    return ImPlot::PlotHistogram(label_id, static_cast<const uint16_t *>(values_from_pyarray), static_cast<int>(values_count), bins, bar_scale, range, flags);
+//                else if (values_type == 'h')
+//                    return ImPlot::PlotHistogram(label_id, static_cast<const int16_t *>(values_from_pyarray), static_cast<int>(values_count), bins, bar_scale, range, flags);
+//                else if (values_type == 'I')
+//                    return ImPlot::PlotHistogram(label_id, static_cast<const uint32_t *>(values_from_pyarray), static_cast<int>(values_count), bins, bar_scale, range, flags);
+//                else if (values_type == 'i')
+//                    return ImPlot::PlotHistogram(label_id, static_cast<const int32_t *>(values_from_pyarray), static_cast<int>(values_count), bins, bar_scale, range, flags);
+//                else if (values_type == 'L')
+//                    return ImPlot::PlotHistogram(label_id, static_cast<const np_uint_l *>(values_from_pyarray), static_cast<int>(values_count), bins, bar_scale, range, flags);
+//                else if (values_type == 'l')
+//                    return ImPlot::PlotHistogram(label_id, static_cast<const np_int_l *>(values_from_pyarray), static_cast<int>(values_count), bins, bar_scale, range, flags);
+//                else if (values_type == 'f')
+//                    return ImPlot::PlotHistogram(label_id, static_cast<const float *>(values_from_pyarray), static_cast<int>(values_count), bins, bar_scale, range, flags);
+//                else if (values_type == 'd')
+//                    return ImPlot::PlotHistogram(label_id, static_cast<const double *>(values_from_pyarray), static_cast<int>(values_count), bins, bar_scale, range, flags);
+//                else if (values_type == 'g')
+//                    return ImPlot::PlotHistogram(label_id, static_cast<const long double *>(values_from_pyarray), static_cast<int>(values_count), bins, bar_scale, range, flags);
+//                else if (values_type == 'q')
+//                    return ImPlot::PlotHistogram(label_id, static_cast<const long long *>(values_from_pyarray), static_cast<int>(values_count), bins, bar_scale, range, flags);
+//                // If we reach this point, the array type is not supported!
+//                else
+//                    throw std::runtime_error(std::string("Bad array type ('") + values_type + "') for param values");
+//            };
+//            auto PlotHistogram_adapt_mutable_param_with_default_value = [&PlotHistogram_adapt_c_buffers](const char * label_id, const nb::ndarray<> & values, int bins = ImPlotBin_Sturges, double bar_scale = 1.0, const std::optional<const ImPlotRange> & range = std::nullopt, ImPlotHistogramFlags flags = 0) -> double
+//            {
+//
+//                const ImPlotRange& range_or_default = [&]() -> const ImPlotRange {
+//                    if (range.has_value())
+//                        return range.value();
+//                    else
+//                        return ImPlotRange();
+//                }();
+//
+//                auto lambda_result = PlotHistogram_adapt_c_buffers(label_id, values, bins, bar_scale, range_or_default, flags);
+//                return lambda_result;
+//            };
+//
+//            return PlotHistogram_adapt_mutable_param_with_default_value(label_id, values, bins, bar_scale, range, flags);
+//        },
+//        nb::arg("label_id"), nb::arg("values"), nb::arg("bins") = ImPlotBin_Sturges, nb::arg("bar_scale") = 1.0, nb::arg("range") = nb::none(), nb::arg("flags") = 0,
+//        " Plots a horizontal histogram. #bins can be a positive integer or an ImPlotBin_ method. If #range is left unspecified, the min/max of #values will be used as the range.\n Otherwise, outlier values outside of the range are not binned. The largest bin count or density is returned.\n---\nPython bindings defaults:\n    If range is None, then its default value will be: Range()");
+//
+//    m.def("plot_histogram_2d",
+//        [](const char * label_id, const nb::ndarray<> & xs, const nb::ndarray<> & ys, int x_bins = ImPlotBin_Sturges, int y_bins = ImPlotBin_Sturges, const std::optional<const ImPlotRect> & range = std::nullopt, ImPlotHistogramFlags flags = 0) -> double
+//        {
+//            auto PlotHistogram2D_adapt_c_buffers = [](const char * label_id, const nb::ndarray<> & xs, const nb::ndarray<> & ys, int x_bins = ImPlotBin_Sturges, int y_bins = ImPlotBin_Sturges, ImPlotRect range = ImPlotRect(), ImPlotHistogramFlags flags = 0) -> double
+//            {
+//                // Check if the array is 1D and C-contiguous
+//                if (! (xs.ndim() == 1 && xs.stride(0) == 1))
+//                    throw std::runtime_error("The array must be 1D and contiguous");
+//
+//                // convert nb::ndarray to C standard buffer (const)
+//                const void * xs_from_pyarray = xs.data();
+//                size_t xs_count = xs.shape(0);
+//
+//                // Check if the array is 1D and C-contiguous
+//                if (! (ys.ndim() == 1 && ys.stride(0) == 1))
+//                    throw std::runtime_error("The array must be 1D and contiguous");
+//
+//                // convert nb::ndarray to C standard buffer (const)
+//                const void * ys_from_pyarray = ys.data();
+//                size_t ys_count = ys.shape(0);
+//
+//                using np_uint_l = uint64_t;
+//                using np_int_l = int64_t;
+//
+//                // Define a lambda to compute the letter code for the buffer type
+//                auto _nanobind_buffer_type_to_letter_code = [](uint8_t dtype_code, size_t sizeof_item)  -> char
+//                {
+//                    #define DCODE(T) static_cast<uint8_t>(nb::dlpack::dtype_code::T)
+//                        const std::array<std::tuple<uint8_t, size_t, char>, 11> mappings = {{
+//                            {DCODE(UInt), 1, 'B'}, {DCODE(UInt), 2, 'H'}, {DCODE(UInt), 4, 'I'}, {DCODE(UInt), 8, 'L'},
+//                            {DCODE(Int), 1, 'b'}, {DCODE(Int), 2, 'h'}, {DCODE(Int), 4, 'i'}, {DCODE(Int), 8, 'l'},
+//                            {DCODE(Float), 4, 'f'}, {DCODE(Float), 8, 'd'}, {DCODE(Float), 16, 'g'}
+//                        }};
+//                    #undef DCODE
+//                    for (const auto& [code_val, size, letter] : mappings)
+//                        if (code_val == dtype_code && size == sizeof_item)
+//                            return letter;
+//                    throw std::runtime_error("Unsupported dtype");
+//                };
+//
+//                // Compute the letter code for the buffer type
+//                uint8_t dtype_code_ys = ys.dtype().code;
+//                size_t sizeof_item_ys = ys.dtype().bits / 8;
+//                char ys_type = _nanobind_buffer_type_to_letter_code(dtype_code_ys, sizeof_item_ys);
+//
+//                // call the correct template version by casting
+//                if (ys_type == 'B')
+//                    return ImPlot::PlotHistogram2D(label_id, static_cast<const uint8_t *>(xs_from_pyarray), static_cast<const uint8_t *>(ys_from_pyarray), static_cast<int>(ys_count), x_bins, y_bins, range, flags);
+//                else if (ys_type == 'b')
+//                    return ImPlot::PlotHistogram2D(label_id, static_cast<const int8_t *>(xs_from_pyarray), static_cast<const int8_t *>(ys_from_pyarray), static_cast<int>(ys_count), x_bins, y_bins, range, flags);
+//                else if (ys_type == 'H')
+//                    return ImPlot::PlotHistogram2D(label_id, static_cast<const uint16_t *>(xs_from_pyarray), static_cast<const uint16_t *>(ys_from_pyarray), static_cast<int>(ys_count), x_bins, y_bins, range, flags);
+//                else if (ys_type == 'h')
+//                    return ImPlot::PlotHistogram2D(label_id, static_cast<const int16_t *>(xs_from_pyarray), static_cast<const int16_t *>(ys_from_pyarray), static_cast<int>(ys_count), x_bins, y_bins, range, flags);
+//                else if (ys_type == 'I')
+//                    return ImPlot::PlotHistogram2D(label_id, static_cast<const uint32_t *>(xs_from_pyarray), static_cast<const uint32_t *>(ys_from_pyarray), static_cast<int>(ys_count), x_bins, y_bins, range, flags);
+//                else if (ys_type == 'i')
+//                    return ImPlot::PlotHistogram2D(label_id, static_cast<const int32_t *>(xs_from_pyarray), static_cast<const int32_t *>(ys_from_pyarray), static_cast<int>(ys_count), x_bins, y_bins, range, flags);
+//                else if (ys_type == 'L')
+//                    return ImPlot::PlotHistogram2D(label_id, static_cast<const np_uint_l *>(xs_from_pyarray), static_cast<const np_uint_l *>(ys_from_pyarray), static_cast<int>(ys_count), x_bins, y_bins, range, flags);
+//                else if (ys_type == 'l')
+//                    return ImPlot::PlotHistogram2D(label_id, static_cast<const np_int_l *>(xs_from_pyarray), static_cast<const np_int_l *>(ys_from_pyarray), static_cast<int>(ys_count), x_bins, y_bins, range, flags);
+//                else if (ys_type == 'f')
+//                    return ImPlot::PlotHistogram2D(label_id, static_cast<const float *>(xs_from_pyarray), static_cast<const float *>(ys_from_pyarray), static_cast<int>(ys_count), x_bins, y_bins, range, flags);
+//                else if (ys_type == 'd')
+//                    return ImPlot::PlotHistogram2D(label_id, static_cast<const double *>(xs_from_pyarray), static_cast<const double *>(ys_from_pyarray), static_cast<int>(ys_count), x_bins, y_bins, range, flags);
+//                else if (ys_type == 'g')
+//                    return ImPlot::PlotHistogram2D(label_id, static_cast<const long double *>(xs_from_pyarray), static_cast<const long double *>(ys_from_pyarray), static_cast<int>(ys_count), x_bins, y_bins, range, flags);
+//                else if (ys_type == 'q')
+//                    return ImPlot::PlotHistogram2D(label_id, static_cast<const long long *>(xs_from_pyarray), static_cast<const long long *>(ys_from_pyarray), static_cast<int>(ys_count), x_bins, y_bins, range, flags);
+//                // If we reach this point, the array type is not supported!
+//                else
+//                    throw std::runtime_error(std::string("Bad array type ('") + ys_type + "') for param ys");
+//            };
+//            auto PlotHistogram2D_adapt_mutable_param_with_default_value = [&PlotHistogram2D_adapt_c_buffers](const char * label_id, const nb::ndarray<> & xs, const nb::ndarray<> & ys, int x_bins = ImPlotBin_Sturges, int y_bins = ImPlotBin_Sturges, const std::optional<const ImPlotRect> & range = std::nullopt, ImPlotHistogramFlags flags = 0) -> double
+//            {
+//
+//                const ImPlotRect& range_or_default = [&]() -> const ImPlotRect {
+//                    if (range.has_value())
+//                        return range.value();
+//                    else
+//                        return ImPlotRect();
+//                }();
+//
+//                auto lambda_result = PlotHistogram2D_adapt_c_buffers(label_id, xs, ys, x_bins, y_bins, range_or_default, flags);
+//                return lambda_result;
+//            };
+//
+//            return PlotHistogram2D_adapt_mutable_param_with_default_value(label_id, xs, ys, x_bins, y_bins, range, flags);
+//        },
+//        nb::arg("label_id"), nb::arg("xs"), nb::arg("ys"), nb::arg("x_bins") = ImPlotBin_Sturges, nb::arg("y_bins") = ImPlotBin_Sturges, nb::arg("range") = nb::none(), nb::arg("flags") = 0,
+//        " Plots two dimensional, bivariate histogram as a heatmap. #x_bins and #y_bins can be a positive integer or an ImPlotBin. If #range is left unspecified, the min/max of\n #xs an #ys will be used as the ranges. Otherwise, outlier values outside of range are not binned. The largest bin count or density is returned.\n---\nPython bindings defaults:\n    If range is None, then its default value will be: Rect()");
+//
+//    m.def("plot_digital",
+//        [](const char * label_id, const nb::ndarray<> & xs, const nb::ndarray<> & ys, ImPlotDigitalFlags flags = 0, int offset = 0)
+//        {
+//            auto PlotDigital_adapt_c_buffers = [](const char * label_id, const nb::ndarray<> & xs, const nb::ndarray<> & ys, ImPlotDigitalFlags flags = 0, int offset = 0, int stride = -1)
+//            {
+//                // Check if the array is 1D and C-contiguous
+//                if (! (xs.ndim() == 1 && xs.stride(0) == 1))
+//                    throw std::runtime_error("The array must be 1D and contiguous");
+//
+//                // convert nb::ndarray to C standard buffer (const)
+//                const void * xs_from_pyarray = xs.data();
+//                size_t xs_count = xs.shape(0);
+//
+//                // Check if the array is 1D and C-contiguous
+//                if (! (ys.ndim() == 1 && ys.stride(0) == 1))
+//                    throw std::runtime_error("The array must be 1D and contiguous");
+//
+//                // convert nb::ndarray to C standard buffer (const)
+//                const void * ys_from_pyarray = ys.data();
+//                size_t ys_count = ys.shape(0);
+//
+//                // process stride default value (which was a sizeof in C++)
+//                int ys_stride = stride;
+//                if (ys_stride == -1)
+//                    ys_stride = (int)ys.itemsize();
+//
+//                using np_uint_l = uint64_t;
+//                using np_int_l = int64_t;
+//
+//                // Define a lambda to compute the letter code for the buffer type
+//                auto _nanobind_buffer_type_to_letter_code = [](uint8_t dtype_code, size_t sizeof_item)  -> char
+//                {
+//                    #define DCODE(T) static_cast<uint8_t>(nb::dlpack::dtype_code::T)
+//                        const std::array<std::tuple<uint8_t, size_t, char>, 11> mappings = {{
+//                            {DCODE(UInt), 1, 'B'}, {DCODE(UInt), 2, 'H'}, {DCODE(UInt), 4, 'I'}, {DCODE(UInt), 8, 'L'},
+//                            {DCODE(Int), 1, 'b'}, {DCODE(Int), 2, 'h'}, {DCODE(Int), 4, 'i'}, {DCODE(Int), 8, 'l'},
+//                            {DCODE(Float), 4, 'f'}, {DCODE(Float), 8, 'd'}, {DCODE(Float), 16, 'g'}
+//                        }};
+//                    #undef DCODE
+//                    for (const auto& [code_val, size, letter] : mappings)
+//                        if (code_val == dtype_code && size == sizeof_item)
+//                            return letter;
+//                    throw std::runtime_error("Unsupported dtype");
+//                };
+//
+//                // Compute the letter code for the buffer type
+//                uint8_t dtype_code_ys = ys.dtype().code;
+//                size_t sizeof_item_ys = ys.dtype().bits / 8;
+//                char ys_type = _nanobind_buffer_type_to_letter_code(dtype_code_ys, sizeof_item_ys);
+//
+//                // call the correct template version by casting
+//                if (ys_type == 'B')
+//                    ImPlot::PlotDigital(label_id, static_cast<const uint8_t *>(xs_from_pyarray), static_cast<const uint8_t *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
+//                else if (ys_type == 'b')
+//                    ImPlot::PlotDigital(label_id, static_cast<const int8_t *>(xs_from_pyarray), static_cast<const int8_t *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
+//                else if (ys_type == 'H')
+//                    ImPlot::PlotDigital(label_id, static_cast<const uint16_t *>(xs_from_pyarray), static_cast<const uint16_t *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
+//                else if (ys_type == 'h')
+//                    ImPlot::PlotDigital(label_id, static_cast<const int16_t *>(xs_from_pyarray), static_cast<const int16_t *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
+//                else if (ys_type == 'I')
+//                    ImPlot::PlotDigital(label_id, static_cast<const uint32_t *>(xs_from_pyarray), static_cast<const uint32_t *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
+//                else if (ys_type == 'i')
+//                    ImPlot::PlotDigital(label_id, static_cast<const int32_t *>(xs_from_pyarray), static_cast<const int32_t *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
+//                else if (ys_type == 'L')
+//                    ImPlot::PlotDigital(label_id, static_cast<const np_uint_l *>(xs_from_pyarray), static_cast<const np_uint_l *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
+//                else if (ys_type == 'l')
+//                    ImPlot::PlotDigital(label_id, static_cast<const np_int_l *>(xs_from_pyarray), static_cast<const np_int_l *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
+//                else if (ys_type == 'f')
+//                    ImPlot::PlotDigital(label_id, static_cast<const float *>(xs_from_pyarray), static_cast<const float *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
+//                else if (ys_type == 'd')
+//                    ImPlot::PlotDigital(label_id, static_cast<const double *>(xs_from_pyarray), static_cast<const double *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
+//                else if (ys_type == 'g')
+//                    ImPlot::PlotDigital(label_id, static_cast<const long double *>(xs_from_pyarray), static_cast<const long double *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
+//                else if (ys_type == 'q')
+//                    ImPlot::PlotDigital(label_id, static_cast<const long long *>(xs_from_pyarray), static_cast<const long long *>(ys_from_pyarray), static_cast<int>(ys_count), flags, offset, ys_stride);
+//                // If we reach this point, the array type is not supported!
+//                else
+//                    throw std::runtime_error(std::string("Bad array type ('") + ys_type + "') for param ys");
+//            };
+//            auto PlotDigital_adapt_exclude_params = [&PlotDigital_adapt_c_buffers](const char * label_id, const nb::ndarray<> & xs, const nb::ndarray<> & ys, ImPlotDigitalFlags flags = 0, int offset = 0)
+//            {
+//                PlotDigital_adapt_c_buffers(label_id, xs, ys, flags, offset, -1);
+//            };
+//
+//            PlotDigital_adapt_exclude_params(label_id, xs, ys, flags, offset);
+//        },     nb::arg("label_id"), nb::arg("xs"), nb::arg("ys"), nb::arg("flags") = 0, nb::arg("offset") = 0);
+//
+//    m.def("plot_image",
+//        [](const char * label_id, ImTextureID user_texture_id, const ImPlotPoint & bounds_min, const ImPlotPoint & bounds_max, const std::optional<const ImVec2> & uv0 = std::nullopt, const std::optional<const ImVec2> & uv1 = std::nullopt, const std::optional<const ImVec4> & tint_col = std::nullopt, ImPlotImageFlags flags = 0)
+//        {
+//            auto PlotImage_adapt_mutable_param_with_default_value = [](const char * label_id, ImTextureID user_texture_id, const ImPlotPoint & bounds_min, const ImPlotPoint & bounds_max, const std::optional<const ImVec2> & uv0 = std::nullopt, const std::optional<const ImVec2> & uv1 = std::nullopt, const std::optional<const ImVec4> & tint_col = std::nullopt, ImPlotImageFlags flags = 0)
+//            {
+//
+//                const ImVec2& uv0_or_default = [&]() -> const ImVec2 {
+//                    if (uv0.has_value())
+//                        return uv0.value();
+//                    else
+//                        return ImVec2(0,0);
+//                }();
+//
+//                const ImVec2& uv1_or_default = [&]() -> const ImVec2 {
+//                    if (uv1.has_value())
+//                        return uv1.value();
+//                    else
+//                        return ImVec2(1,1);
+//                }();
+//
+//                const ImVec4& tint_col_or_default = [&]() -> const ImVec4 {
+//                    if (tint_col.has_value())
+//                        return tint_col.value();
+//                    else
+//                        return ImVec4(1,1,1,1);
+//                }();
+//
+//                ImPlot::PlotImage(label_id, user_texture_id, bounds_min, bounds_max, uv0_or_default, uv1_or_default, tint_col_or_default, flags);
+//            };
+//
+//            PlotImage_adapt_mutable_param_with_default_value(label_id, user_texture_id, bounds_min, bounds_max, uv0, uv1, tint_col, flags);
+//        },
+//        nb::arg("label_id"), nb::arg("user_texture_id"), nb::arg("bounds_min"), nb::arg("bounds_max"), nb::arg("uv0") = nb::none(), nb::arg("uv1") = nb::none(), nb::arg("tint_col") = nb::none(), nb::arg("flags") = 0,
+//        " Plots an axis-aligned image. #bounds_min/bounds_max are in plot coordinates (y-up) and #uv0/uv1 are in texture coordinates (y-down).\n---\nPython bindings defaults:\n    If any of the params below is None, then its default value below will be used:\n        uv0: ImVec2(0,0)\n        uv1: ImVec2(1,1)\n        tint_col: ImVec4(1,1,1,1)");
+//
+//    m.def("plot_text",
+//        [](const char * text, double x, double y, const std::optional<const ImVec2> & pix_offset = std::nullopt, ImPlotTextFlags flags = 0)
+//        {
+//            auto PlotText_adapt_mutable_param_with_default_value = [](const char * text, double x, double y, const std::optional<const ImVec2> & pix_offset = std::nullopt, ImPlotTextFlags flags = 0)
+//            {
+//
+//                const ImVec2& pix_offset_or_default = [&]() -> const ImVec2 {
+//                    if (pix_offset.has_value())
+//                        return pix_offset.value();
+//                    else
+//                        return ImVec2(0,0);
+//                }();
+//
+//                ImPlot::PlotText(text, x, y, pix_offset_or_default, flags);
+//            };
+//
+//            PlotText_adapt_mutable_param_with_default_value(text, x, y, pix_offset, flags);
+//        },
+//        nb::arg("text"), nb::arg("x"), nb::arg("y"), nb::arg("pix_offset") = nb::none(), nb::arg("flags") = 0,
+//        " Plots a centered text label at point x,y with an optional pixel offset. Text color can be changed with ImPlot::PushStyleColor(ImPlotCol_InlayText, ...).\n---\nPython bindings defaults:\n    If pix_offset is None, then its default value will be: ImVec2(0,0)");
+//
+//    m.def("plot_dummy",
+//        ImPlot::PlotDummy,
+//        nb::arg("label_id"), nb::arg("flags") = 0,
+//        "Plots a dummy item (i.e. adds a legend entry colored by ImPlotCol_Line)");
+//
+//    m.def("drag_point",
+//        [](int id, double x, double y, const ImVec4 & col, float size = 4, ImPlotDragToolFlags flags = 0, std::optional<bool> out_clicked = std::nullopt, std::optional<bool> out_hovered = std::nullopt, std::optional<bool> held = std::nullopt) -> std::tuple<bool, double, double, std::optional<bool>, std::optional<bool>, std::optional<bool>>
+//        {
+//            auto DragPoint_adapt_modifiable_immutable_to_return = [](int id, double x, double y, const ImVec4 & col, float size = 4, ImPlotDragToolFlags flags = 0, std::optional<bool> out_clicked = std::nullopt, std::optional<bool> out_hovered = std::nullopt, std::optional<bool> held = std::nullopt) -> std::tuple<bool, double, double, std::optional<bool>, std::optional<bool>, std::optional<bool>>
+//            {
+//                double * x_adapt_modifiable = & x;
+//                double * y_adapt_modifiable = & y;
+//                bool * out_clicked_adapt_modifiable = nullptr;
+//                if (out_clicked.has_value())
+//                    out_clicked_adapt_modifiable = & (*out_clicked);
+//                bool * out_hovered_adapt_modifiable = nullptr;
+//                if (out_hovered.has_value())
+//                    out_hovered_adapt_modifiable = & (*out_hovered);
+//                bool * held_adapt_modifiable = nullptr;
+//                if (held.has_value())
+//                    held_adapt_modifiable = & (*held);
+//
+//                bool r = ImPlot::DragPoint(id, x_adapt_modifiable, y_adapt_modifiable, col, size, flags, out_clicked_adapt_modifiable, out_hovered_adapt_modifiable, held_adapt_modifiable);
+//                return std::make_tuple(r, x, y, out_clicked, out_hovered, held);
+//            };
+//
+//            return DragPoint_adapt_modifiable_immutable_to_return(id, x, y, col, size, flags, out_clicked, out_hovered, held);
+//        },
+//        nb::arg("id_"), nb::arg("x"), nb::arg("y"), nb::arg("col"), nb::arg("size") = 4, nb::arg("flags") = 0, nb::arg("out_clicked") = nb::none(), nb::arg("out_hovered") = nb::none(), nb::arg("held") = nb::none(),
+//        "Shows a draggable point at x,y. #col defaults to ImGuiCol_Text.");
+//
+//    m.def("drag_line_x",
+//        [](int id, double x, const ImVec4 & col, float thickness = 1, ImPlotDragToolFlags flags = 0, std::optional<bool> out_clicked = std::nullopt, std::optional<bool> out_hovered = std::nullopt, std::optional<bool> held = std::nullopt) -> std::tuple<bool, double, std::optional<bool>, std::optional<bool>, std::optional<bool>>
+//        {
+//            auto DragLineX_adapt_modifiable_immutable_to_return = [](int id, double x, const ImVec4 & col, float thickness = 1, ImPlotDragToolFlags flags = 0, std::optional<bool> out_clicked = std::nullopt, std::optional<bool> out_hovered = std::nullopt, std::optional<bool> held = std::nullopt) -> std::tuple<bool, double, std::optional<bool>, std::optional<bool>, std::optional<bool>>
+//            {
+//                double * x_adapt_modifiable = & x;
+//                bool * out_clicked_adapt_modifiable = nullptr;
+//                if (out_clicked.has_value())
+//                    out_clicked_adapt_modifiable = & (*out_clicked);
+//                bool * out_hovered_adapt_modifiable = nullptr;
+//                if (out_hovered.has_value())
+//                    out_hovered_adapt_modifiable = & (*out_hovered);
+//                bool * held_adapt_modifiable = nullptr;
+//                if (held.has_value())
+//                    held_adapt_modifiable = & (*held);
+//
+//                bool r = ImPlot::DragLineX(id, x_adapt_modifiable, col, thickness, flags, out_clicked_adapt_modifiable, out_hovered_adapt_modifiable, held_adapt_modifiable);
+//                return std::make_tuple(r, x, out_clicked, out_hovered, held);
+//            };
+//
+//            return DragLineX_adapt_modifiable_immutable_to_return(id, x, col, thickness, flags, out_clicked, out_hovered, held);
+//        },
+//        nb::arg("id_"), nb::arg("x"), nb::arg("col"), nb::arg("thickness") = 1, nb::arg("flags") = 0, nb::arg("out_clicked") = nb::none(), nb::arg("out_hovered") = nb::none(), nb::arg("held") = nb::none(),
+//        "Shows a draggable vertical guide line at an x-value. #col defaults to ImGuiCol_Text.");
+//
+//    m.def("drag_line_y",
+//        [](int id, double y, const ImVec4 & col, float thickness = 1, ImPlotDragToolFlags flags = 0, std::optional<bool> out_clicked = std::nullopt, std::optional<bool> out_hovered = std::nullopt, std::optional<bool> held = std::nullopt) -> std::tuple<bool, double, std::optional<bool>, std::optional<bool>, std::optional<bool>>
+//        {
+//            auto DragLineY_adapt_modifiable_immutable_to_return = [](int id, double y, const ImVec4 & col, float thickness = 1, ImPlotDragToolFlags flags = 0, std::optional<bool> out_clicked = std::nullopt, std::optional<bool> out_hovered = std::nullopt, std::optional<bool> held = std::nullopt) -> std::tuple<bool, double, std::optional<bool>, std::optional<bool>, std::optional<bool>>
+//            {
+//                double * y_adapt_modifiable = & y;
+//                bool * out_clicked_adapt_modifiable = nullptr;
+//                if (out_clicked.has_value())
+//                    out_clicked_adapt_modifiable = & (*out_clicked);
+//                bool * out_hovered_adapt_modifiable = nullptr;
+//                if (out_hovered.has_value())
+//                    out_hovered_adapt_modifiable = & (*out_hovered);
+//                bool * held_adapt_modifiable = nullptr;
+//                if (held.has_value())
+//                    held_adapt_modifiable = & (*held);
+//
+//                bool r = ImPlot::DragLineY(id, y_adapt_modifiable, col, thickness, flags, out_clicked_adapt_modifiable, out_hovered_adapt_modifiable, held_adapt_modifiable);
+//                return std::make_tuple(r, y, out_clicked, out_hovered, held);
+//            };
+//
+//            return DragLineY_adapt_modifiable_immutable_to_return(id, y, col, thickness, flags, out_clicked, out_hovered, held);
+//        },
+//        nb::arg("id_"), nb::arg("y"), nb::arg("col"), nb::arg("thickness") = 1, nb::arg("flags") = 0, nb::arg("out_clicked") = nb::none(), nb::arg("out_hovered") = nb::none(), nb::arg("held") = nb::none(),
+//        "Shows a draggable horizontal guide line at a y-value. #col defaults to ImGuiCol_Text.");
+//
+//    m.def("drag_rect",
+//        [](int id, double x1, double y1, double x2, double y2, const ImVec4 & col, ImPlotDragToolFlags flags = 0, std::optional<bool> out_clicked = std::nullopt, std::optional<bool> out_hovered = std::nullopt, std::optional<bool> held = std::nullopt) -> std::tuple<bool, double, double, double, double, std::optional<bool>, std::optional<bool>, std::optional<bool>>
+//        {
+//            auto DragRect_adapt_modifiable_immutable_to_return = [](int id, double x1, double y1, double x2, double y2, const ImVec4 & col, ImPlotDragToolFlags flags = 0, std::optional<bool> out_clicked = std::nullopt, std::optional<bool> out_hovered = std::nullopt, std::optional<bool> held = std::nullopt) -> std::tuple<bool, double, double, double, double, std::optional<bool>, std::optional<bool>, std::optional<bool>>
+//            {
+//                double * x1_adapt_modifiable = & x1;
+//                double * y1_adapt_modifiable = & y1;
+//                double * x2_adapt_modifiable = & x2;
+//                double * y2_adapt_modifiable = & y2;
+//                bool * out_clicked_adapt_modifiable = nullptr;
+//                if (out_clicked.has_value())
+//                    out_clicked_adapt_modifiable = & (*out_clicked);
+//                bool * out_hovered_adapt_modifiable = nullptr;
+//                if (out_hovered.has_value())
+//                    out_hovered_adapt_modifiable = & (*out_hovered);
+//                bool * held_adapt_modifiable = nullptr;
+//                if (held.has_value())
+//                    held_adapt_modifiable = & (*held);
+//
+//                bool r = ImPlot::DragRect(id, x1_adapt_modifiable, y1_adapt_modifiable, x2_adapt_modifiable, y2_adapt_modifiable, col, flags, out_clicked_adapt_modifiable, out_hovered_adapt_modifiable, held_adapt_modifiable);
+//                return std::make_tuple(r, x1, y1, x2, y2, out_clicked, out_hovered, held);
+//            };
+//
+//            return DragRect_adapt_modifiable_immutable_to_return(id, x1, y1, x2, y2, col, flags, out_clicked, out_hovered, held);
+//        },
+//        nb::arg("id_"), nb::arg("x1"), nb::arg("y1"), nb::arg("x2"), nb::arg("y2"), nb::arg("col"), nb::arg("flags") = 0, nb::arg("out_clicked") = nb::none(), nb::arg("out_hovered") = nb::none(), nb::arg("held") = nb::none(),
+//        "Shows a draggable and resizeable rectangle.");
+//
+//    m.def("annotation",
+//        nb::overload_cast<double, double, const ImVec4 &, const ImVec2 &, bool, bool>(ImPlot::Annotation), nb::arg("x"), nb::arg("y"), nb::arg("col"), nb::arg("pix_offset"), nb::arg("clamp"), nb::arg("round") = false);
+//
+//    m.def("annotation",
+//        [](double x, double y, const ImVec4 & col, const ImVec2 & pix_offset, bool clamp, const char * fmt)
+//        {
+//            auto Annotation_adapt_variadic_format = [](double x, double y, const ImVec4 & col, const ImVec2 & pix_offset, bool clamp, const char * fmt)
+//            {
+//                ImPlot::Annotation(x, y, col, pix_offset, clamp, "%s", fmt);
+//            };
+//
+//            Annotation_adapt_variadic_format(x, y, col, pix_offset, clamp, fmt);
+//        },     nb::arg("x"), nb::arg("y"), nb::arg("col"), nb::arg("pix_offset"), nb::arg("clamp"), nb::arg("fmt"));
+//
+//    m.def("tag_x",
+//        nb::overload_cast<double, const ImVec4 &, bool>(ImPlot::TagX), nb::arg("x"), nb::arg("col"), nb::arg("round") = false);
+//
+//    m.def("tag_x",
+//        [](double x, const ImVec4 & col, const char * fmt)
+//        {
+//            auto TagX_adapt_variadic_format = [](double x, const ImVec4 & col, const char * fmt)
+//            {
+//                ImPlot::TagX(x, col, "%s", fmt);
+//            };
+//
+//            TagX_adapt_variadic_format(x, col, fmt);
+//        },     nb::arg("x"), nb::arg("col"), nb::arg("fmt"));
+//
+//    m.def("tag_y",
+//        nb::overload_cast<double, const ImVec4 &, bool>(ImPlot::TagY), nb::arg("y"), nb::arg("col"), nb::arg("round") = false);
+//
+//    m.def("tag_y",
+//        [](double y, const ImVec4 & col, const char * fmt)
+//        {
+//            auto TagY_adapt_variadic_format = [](double y, const ImVec4 & col, const char * fmt)
+//            {
+//                ImPlot::TagY(y, col, "%s", fmt);
+//            };
+//
+//            TagY_adapt_variadic_format(y, col, fmt);
+//        },     nb::arg("y"), nb::arg("col"), nb::arg("fmt"));
+//
+//    m.def("set_axis",
+//        ImPlot::SetAxis, nb::arg("axis"));
+//
+//    m.def("set_axes",
+//        ImPlot::SetAxes, nb::arg("x_axis"), nb::arg("y_axis"));
+//
+//    m.def("pixels_to_plot",
+//        [](const ImVec2 & pix, const std::optional<const ImAxis> & x_axis = std::nullopt, const std::optional<const ImAxis> & y_axis = std::nullopt) -> ImPlotPoint
+//        {
+//            auto PixelsToPlot_adapt_mutable_param_with_default_value = [](const ImVec2 & pix, const std::optional<const ImAxis> & x_axis = std::nullopt, const std::optional<const ImAxis> & y_axis = std::nullopt) -> ImPlotPoint
+//            {
+//
+//                const ImAxis& x_axis_or_default = [&]() -> const ImAxis {
+//                    if (x_axis.has_value())
+//                        return x_axis.value();
+//                    else
+//                        return IMPLOT_AUTO;
+//                }();
+//
+//                const ImAxis& y_axis_or_default = [&]() -> const ImAxis {
+//                    if (y_axis.has_value())
+//                        return y_axis.value();
+//                    else
+//                        return IMPLOT_AUTO;
+//                }();
+//
+//                auto lambda_result = ImPlot::PixelsToPlot(pix, x_axis_or_default, y_axis_or_default);
+//                return lambda_result;
+//            };
+//
+//            return PixelsToPlot_adapt_mutable_param_with_default_value(pix, x_axis, y_axis);
+//        },
+//        nb::arg("pix"), nb::arg("x_axis") = nb::none(), nb::arg("y_axis") = nb::none(),
+//        "---\nPython bindings defaults:\n    If any of the params below is None, then its default value below will be used:\n        x_axis: IMPLOT_AUTO\n        y_axis: IMPLOT_AUTO");
+//
+//    m.def("pixels_to_plot",
+//        [](float x, float y, const std::optional<const ImAxis> & x_axis = std::nullopt, const std::optional<const ImAxis> & y_axis = std::nullopt) -> ImPlotPoint
+//        {
+//            auto PixelsToPlot_adapt_mutable_param_with_default_value = [](float x, float y, const std::optional<const ImAxis> & x_axis = std::nullopt, const std::optional<const ImAxis> & y_axis = std::nullopt) -> ImPlotPoint
+//            {
+//
+//                const ImAxis& x_axis_or_default = [&]() -> const ImAxis {
+//                    if (x_axis.has_value())
+//                        return x_axis.value();
+//                    else
+//                        return IMPLOT_AUTO;
+//                }();
+//
+//                const ImAxis& y_axis_or_default = [&]() -> const ImAxis {
+//                    if (y_axis.has_value())
+//                        return y_axis.value();
+//                    else
+//                        return IMPLOT_AUTO;
+//                }();
+//
+//                auto lambda_result = ImPlot::PixelsToPlot(x, y, x_axis_or_default, y_axis_or_default);
+//                return lambda_result;
+//            };
+//
+//            return PixelsToPlot_adapt_mutable_param_with_default_value(x, y, x_axis, y_axis);
+//        },
+//        nb::arg("x"), nb::arg("y"), nb::arg("x_axis") = nb::none(), nb::arg("y_axis") = nb::none(),
+//        "---\nPython bindings defaults:\n    If any of the params below is None, then its default value below will be used:\n        x_axis: IMPLOT_AUTO\n        y_axis: IMPLOT_AUTO");
+//
+//    m.def("plot_to_pixels",
+//        [](const ImPlotPoint & plt, const std::optional<const ImAxis> & x_axis = std::nullopt, const std::optional<const ImAxis> & y_axis = std::nullopt) -> ImVec2
+//        {
+//            auto PlotToPixels_adapt_mutable_param_with_default_value = [](const ImPlotPoint & plt, const std::optional<const ImAxis> & x_axis = std::nullopt, const std::optional<const ImAxis> & y_axis = std::nullopt) -> ImVec2
+//            {
+//
+//                const ImAxis& x_axis_or_default = [&]() -> const ImAxis {
+//                    if (x_axis.has_value())
+//                        return x_axis.value();
+//                    else
+//                        return IMPLOT_AUTO;
+//                }();
+//
+//                const ImAxis& y_axis_or_default = [&]() -> const ImAxis {
+//                    if (y_axis.has_value())
+//                        return y_axis.value();
+//                    else
+//                        return IMPLOT_AUTO;
+//                }();
+//
+//                auto lambda_result = ImPlot::PlotToPixels(plt, x_axis_or_default, y_axis_or_default);
+//                return lambda_result;
+//            };
+//
+//            return PlotToPixels_adapt_mutable_param_with_default_value(plt, x_axis, y_axis);
+//        },
+//        nb::arg("plt"), nb::arg("x_axis") = nb::none(), nb::arg("y_axis") = nb::none(),
+//        "---\nPython bindings defaults:\n    If any of the params below is None, then its default value below will be used:\n        x_axis: IMPLOT_AUTO\n        y_axis: IMPLOT_AUTO");
+//
+//    m.def("plot_to_pixels",
+//        [](double x, double y, const std::optional<const ImAxis> & x_axis = std::nullopt, const std::optional<const ImAxis> & y_axis = std::nullopt) -> ImVec2
+//        {
+//            auto PlotToPixels_adapt_mutable_param_with_default_value = [](double x, double y, const std::optional<const ImAxis> & x_axis = std::nullopt, const std::optional<const ImAxis> & y_axis = std::nullopt) -> ImVec2
+//            {
+//
+//                const ImAxis& x_axis_or_default = [&]() -> const ImAxis {
+//                    if (x_axis.has_value())
+//                        return x_axis.value();
+//                    else
+//                        return IMPLOT_AUTO;
+//                }();
+//
+//                const ImAxis& y_axis_or_default = [&]() -> const ImAxis {
+//                    if (y_axis.has_value())
+//                        return y_axis.value();
+//                    else
+//                        return IMPLOT_AUTO;
+//                }();
+//
+//                auto lambda_result = ImPlot::PlotToPixels(x, y, x_axis_or_default, y_axis_or_default);
+//                return lambda_result;
+//            };
+//
+//            return PlotToPixels_adapt_mutable_param_with_default_value(x, y, x_axis, y_axis);
+//        },
+//        nb::arg("x"), nb::arg("y"), nb::arg("x_axis") = nb::none(), nb::arg("y_axis") = nb::none(),
+//        "---\nPython bindings defaults:\n    If any of the params below is None, then its default value below will be used:\n        x_axis: IMPLOT_AUTO\n        y_axis: IMPLOT_AUTO");
+//
+//    m.def("get_plot_pos",
+//        ImPlot::GetPlotPos, "Get the current Plot position (top-left) in pixels.");
+//
+//    m.def("get_plot_size",
+//        ImPlot::GetPlotSize, "Get the curent Plot size in pixels.");
+//
+//    m.def("get_plot_mouse_pos",
+//        [](const std::optional<const ImAxis> & x_axis = std::nullopt, const std::optional<const ImAxis> & y_axis = std::nullopt) -> ImPlotPoint
+//        {
+//            auto GetPlotMousePos_adapt_mutable_param_with_default_value = [](const std::optional<const ImAxis> & x_axis = std::nullopt, const std::optional<const ImAxis> & y_axis = std::nullopt) -> ImPlotPoint
+//            {
+//
+//                const ImAxis& x_axis_or_default = [&]() -> const ImAxis {
+//                    if (x_axis.has_value())
+//                        return x_axis.value();
+//                    else
+//                        return IMPLOT_AUTO;
+//                }();
+//
+//                const ImAxis& y_axis_or_default = [&]() -> const ImAxis {
+//                    if (y_axis.has_value())
+//                        return y_axis.value();
+//                    else
+//                        return IMPLOT_AUTO;
+//                }();
+//
+//                auto lambda_result = ImPlot::GetPlotMousePos(x_axis_or_default, y_axis_or_default);
+//                return lambda_result;
+//            };
+//
+//            return GetPlotMousePos_adapt_mutable_param_with_default_value(x_axis, y_axis);
+//        },
+//        nb::arg("x_axis") = nb::none(), nb::arg("y_axis") = nb::none(),
+//        " Returns the mouse position in x,y coordinates of the current plot. Passing IMPLOT_AUTO uses the current axes.\n---\nPython bindings defaults:\n    If any of the params below is None, then its default value below will be used:\n        x_axis: IMPLOT_AUTO\n        y_axis: IMPLOT_AUTO");
+//
+//    m.def("get_plot_limits",
+//        [](const std::optional<const ImAxis> & x_axis = std::nullopt, const std::optional<const ImAxis> & y_axis = std::nullopt) -> ImPlotRect
+//        {
+//            auto GetPlotLimits_adapt_mutable_param_with_default_value = [](const std::optional<const ImAxis> & x_axis = std::nullopt, const std::optional<const ImAxis> & y_axis = std::nullopt) -> ImPlotRect
+//            {
+//
+//                const ImAxis& x_axis_or_default = [&]() -> const ImAxis {
+//                    if (x_axis.has_value())
+//                        return x_axis.value();
+//                    else
+//                        return IMPLOT_AUTO;
+//                }();
+//
+//                const ImAxis& y_axis_or_default = [&]() -> const ImAxis {
+//                    if (y_axis.has_value())
+//                        return y_axis.value();
+//                    else
+//                        return IMPLOT_AUTO;
+//                }();
+//
+//                auto lambda_result = ImPlot::GetPlotLimits(x_axis_or_default, y_axis_or_default);
+//                return lambda_result;
+//            };
+//
+//            return GetPlotLimits_adapt_mutable_param_with_default_value(x_axis, y_axis);
+//        },
+//        nb::arg("x_axis") = nb::none(), nb::arg("y_axis") = nb::none(),
+//        " Returns the current plot axis range.\n---\nPython bindings defaults:\n    If any of the params below is None, then its default value below will be used:\n        x_axis: IMPLOT_AUTO\n        y_axis: IMPLOT_AUTO");
+//
+//    m.def("is_plot_hovered",
+//        ImPlot::IsPlotHovered, "Returns True if the plot area in the current plot is hovered.");
+//
+//    m.def("is_axis_hovered",
+//        ImPlot::IsAxisHovered,
+//        nb::arg("axis"),
+//        "Returns True if the axis label area in the current plot is hovered.");
+//
+//    m.def("is_subplots_hovered",
+//        ImPlot::IsSubplotsHovered, "Returns True if the bounding frame of a subplot is hovered.");
+//
+//    m.def("is_plot_selected",
+//        ImPlot::IsPlotSelected, "Returns True if the current plot is being box selected.");
+//
+//    m.def("get_plot_selection",
+//        [](const std::optional<const ImAxis> & x_axis = std::nullopt, const std::optional<const ImAxis> & y_axis = std::nullopt) -> ImPlotRect
+//        {
+//            auto GetPlotSelection_adapt_mutable_param_with_default_value = [](const std::optional<const ImAxis> & x_axis = std::nullopt, const std::optional<const ImAxis> & y_axis = std::nullopt) -> ImPlotRect
+//            {
+//
+//                const ImAxis& x_axis_or_default = [&]() -> const ImAxis {
+//                    if (x_axis.has_value())
+//                        return x_axis.value();
+//                    else
+//                        return IMPLOT_AUTO;
+//                }();
+//
+//                const ImAxis& y_axis_or_default = [&]() -> const ImAxis {
+//                    if (y_axis.has_value())
+//                        return y_axis.value();
+//                    else
+//                        return IMPLOT_AUTO;
+//                }();
+//
+//                auto lambda_result = ImPlot::GetPlotSelection(x_axis_or_default, y_axis_or_default);
+//                return lambda_result;
+//            };
+//
+//            return GetPlotSelection_adapt_mutable_param_with_default_value(x_axis, y_axis);
+//        },
+//        nb::arg("x_axis") = nb::none(), nb::arg("y_axis") = nb::none(),
+//        " Returns the current plot box selection bounds. Passing IMPLOT_AUTO uses the current axes.\n---\nPython bindings defaults:\n    If any of the params below is None, then its default value below will be used:\n        x_axis: IMPLOT_AUTO\n        y_axis: IMPLOT_AUTO");
+//
+//    m.def("cancel_plot_selection",
+//        ImPlot::CancelPlotSelection, "Cancels a the current plot box selection.");
+//
+//    m.def("hide_next_item",
+//        [](bool hidden = true, const std::optional<const ImPlotCond> & cond = std::nullopt)
+//        {
+//            auto HideNextItem_adapt_mutable_param_with_default_value = [](bool hidden = true, const std::optional<const ImPlotCond> & cond = std::nullopt)
+//            {
+//
+//                const ImPlotCond& cond_or_default = [&]() -> const ImPlotCond {
+//                    if (cond.has_value())
+//                        return cond.value();
+//                    else
+//                        return ImPlotCond_Once;
+//                }();
+//
+//                ImPlot::HideNextItem(hidden, cond_or_default);
+//            };
+//
+//            HideNextItem_adapt_mutable_param_with_default_value(hidden, cond);
+//        },
+//        nb::arg("hidden") = true, nb::arg("cond") = nb::none(),
+//        " Hides or shows the next plot item (i.e. as if it were toggled from the legend).\n Use ImPlotCond_Always if you need to forcefully set this every frame.\n---\nPython bindings defaults:\n    If cond is None, then its default value will be: Cond_Once");
+//
+//    m.def("begin_aligned_plots",
+//        ImPlot::BeginAlignedPlots,
+//        nb::arg("group_id"), nb::arg("vertical") = true,
+//        " Align axis padding over multiple plots in a single row or column. #group_id must\n be unique. If this function returns True, EndAlignedPlots() must be called.");
+//
+//    m.def("end_aligned_plots",
+//        ImPlot::EndAlignedPlots, "Only call EndAlignedPlots() if BeginAlignedPlots() returns True!");
+//
+//    m.def("begin_legend_popup",
+//        ImPlot::BeginLegendPopup,
+//        nb::arg("label_id"), nb::arg("mouse_button") = 1,
+//        "Begin a popup for a legend entry.");
+//
+//    m.def("end_legend_popup",
+//        ImPlot::EndLegendPopup, "End a popup for a legend entry.");
+//
+//    m.def("is_legend_entry_hovered",
+//        ImPlot::IsLegendEntryHovered,
+//        nb::arg("label_id"),
+//        "Returns True if a plot item legend entry is hovered.");
+//
+//    m.def("begin_drag_drop_target_plot",
+//        ImPlot::BeginDragDropTargetPlot, "Turns the current plot's plotting area into a drag and drop target. Don't forget to call EndDragDropTarget!");
+//
+//    m.def("begin_drag_drop_target_axis",
+//        ImPlot::BeginDragDropTargetAxis,
+//        nb::arg("axis"),
+//        "Turns the current plot's X-axis into a drag and drop target. Don't forget to call EndDragDropTarget!");
+//
+//    m.def("begin_drag_drop_target_legend",
+//        ImPlot::BeginDragDropTargetLegend, "Turns the current plot's legend into a drag and drop target. Don't forget to call EndDragDropTarget!");
+//
+//    m.def("end_drag_drop_target",
+//        ImPlot::EndDragDropTarget, "Ends a drag and drop target (currently just an alias for ImGui::EndDragDropTarget).");
+//
+//    m.def("begin_drag_drop_source_plot",
+//        ImPlot::BeginDragDropSourcePlot,
+//        nb::arg("flags") = 0,
+//        "Turns the current plot's plotting area into a drag and drop source. You must hold Ctrl. Don't forget to call EndDragDropSource!");
+//
+//    m.def("begin_drag_drop_source_axis",
+//        ImPlot::BeginDragDropSourceAxis,
+//        nb::arg("axis"), nb::arg("flags") = 0,
+//        "Turns the current plot's X-axis into a drag and drop source. You must hold Ctrl. Don't forget to call EndDragDropSource!");
+//
+//    m.def("begin_drag_drop_source_item",
+//        ImPlot::BeginDragDropSourceItem,
+//        nb::arg("label_id"), nb::arg("flags") = 0,
+//        "Turns an item in the current plot's legend into drag and drop source. Don't forget to call EndDragDropSource!");
+//
+//    m.def("end_drag_drop_source",
+//        ImPlot::EndDragDropSource, "Ends a drag and drop source (currently just an alias for ImGui::EndDragDropSource).");
+//
+//    m.def("get_style",
+//        ImPlot::GetStyle,
+//        "Provides access to plot style structure for permanant modifications to colors, sizes, etc.",
+//        nb::rv_policy::reference);
+//
+//    m.def("style_colors_auto",
+//        ImPlot::StyleColorsAuto,
+//        nb::arg("dst") = nb::none(),
+//        "Style plot colors for current ImGui style (default).");
+//
+//    m.def("style_colors_classic",
+//        ImPlot::StyleColorsClassic,
+//        nb::arg("dst") = nb::none(),
+//        "Style plot colors for ImGui \"Classic\".");
+//
+//    m.def("style_colors_dark",
+//        ImPlot::StyleColorsDark,
+//        nb::arg("dst") = nb::none(),
+//        "Style plot colors for ImGui \"Dark\".");
+//
+//    m.def("style_colors_light",
+//        ImPlot::StyleColorsLight,
+//        nb::arg("dst") = nb::none(),
+//        "Style plot colors for ImGui \"Light\".");
+//
+//    m.def("push_style_color",
+//        nb::overload_cast<ImPlotCol, ImU32>(ImPlot::PushStyleColor), nb::arg("idx"), nb::arg("col"));
+//
+//    m.def("push_style_color",
+//        nb::overload_cast<ImPlotCol, const ImVec4 &>(ImPlot::PushStyleColor), nb::arg("idx"), nb::arg("col"));
+//
+//    m.def("pop_style_color",
+//        ImPlot::PopStyleColor,
+//        nb::arg("count") = 1,
+//        "Undo temporary style color modification(s). Undo multiple pushes at once by increasing count.");
+//
+//    m.def("push_style_var",
+//        nb::overload_cast<ImPlotStyleVar, float>(ImPlot::PushStyleVar),
+//        nb::arg("idx"), nb::arg("val"),
+//        "Temporarily modify a style variable of float type. Don't forget to call PopStyleVar!");
+//
+//    m.def("push_style_var",
+//        nb::overload_cast<ImPlotStyleVar, int>(ImPlot::PushStyleVar),
+//        nb::arg("idx"), nb::arg("val"),
+//        "Temporarily modify a style variable of int type. Don't forget to call PopStyleVar!");
+//
+//    m.def("push_style_var",
+//        nb::overload_cast<ImPlotStyleVar, const ImVec2 &>(ImPlot::PushStyleVar),
+//        nb::arg("idx"), nb::arg("val"),
+//        "Temporarily modify a style variable of ImVec2 type. Don't forget to call PopStyleVar!");
+//
+//    m.def("pop_style_var",
+//        ImPlot::PopStyleVar,
+//        nb::arg("count") = 1,
+//        "Undo temporary style variable modification(s). Undo multiple pushes at once by increasing count.");
+//
+//    m.def("set_next_line_style",
+//        [](const std::optional<const ImVec4> & col = std::nullopt, float weight = IMPLOT_AUTO)
+//        {
+//            auto SetNextLineStyle_adapt_mutable_param_with_default_value = [](const std::optional<const ImVec4> & col = std::nullopt, float weight = IMPLOT_AUTO)
+//            {
+//
+//                const ImVec4& col_or_default = [&]() -> const ImVec4 {
+//                    if (col.has_value())
+//                        return col.value();
+//                    else
+//                        return IMPLOT_AUTO_COL;
+//                }();
+//
+//                ImPlot::SetNextLineStyle(col_or_default, weight);
+//            };
+//
+//            SetNextLineStyle_adapt_mutable_param_with_default_value(col, weight);
+//        },
+//        nb::arg("col") = nb::none(), nb::arg("weight") = IMPLOT_AUTO,
+//        " Set the line color and weight for the next item only.\n---\nPython bindings defaults:\n    If col is None, then its default value will be: IMPLOT_AUTO_COL");
+//
+//    m.def("set_next_fill_style",
+//        [](const std::optional<const ImVec4> & col = std::nullopt, float alpha_mod = IMPLOT_AUTO)
+//        {
+//            auto SetNextFillStyle_adapt_mutable_param_with_default_value = [](const std::optional<const ImVec4> & col = std::nullopt, float alpha_mod = IMPLOT_AUTO)
+//            {
+//
+//                const ImVec4& col_or_default = [&]() -> const ImVec4 {
+//                    if (col.has_value())
+//                        return col.value();
+//                    else
+//                        return IMPLOT_AUTO_COL;
+//                }();
+//
+//                ImPlot::SetNextFillStyle(col_or_default, alpha_mod);
+//            };
+//
+//            SetNextFillStyle_adapt_mutable_param_with_default_value(col, alpha_mod);
+//        },
+//        nb::arg("col") = nb::none(), nb::arg("alpha_mod") = IMPLOT_AUTO,
+//        " Set the fill color for the next item only.\n---\nPython bindings defaults:\n    If col is None, then its default value will be: IMPLOT_AUTO_COL");
+//
+//    m.def("set_next_marker_style",
+//        [](const std::optional<const ImPlotMarker> & marker = std::nullopt, float size = IMPLOT_AUTO, const std::optional<const ImVec4> & fill = std::nullopt, float weight = IMPLOT_AUTO, const std::optional<const ImVec4> & outline = std::nullopt)
+//        {
+//            auto SetNextMarkerStyle_adapt_mutable_param_with_default_value = [](const std::optional<const ImPlotMarker> & marker = std::nullopt, float size = IMPLOT_AUTO, const std::optional<const ImVec4> & fill = std::nullopt, float weight = IMPLOT_AUTO, const std::optional<const ImVec4> & outline = std::nullopt)
+//            {
+//
+//                const ImPlotMarker& marker_or_default = [&]() -> const ImPlotMarker {
+//                    if (marker.has_value())
+//                        return marker.value();
+//                    else
+//                        return IMPLOT_AUTO;
+//                }();
+//
+//                const ImVec4& fill_or_default = [&]() -> const ImVec4 {
+//                    if (fill.has_value())
+//                        return fill.value();
+//                    else
+//                        return IMPLOT_AUTO_COL;
+//                }();
+//
+//                const ImVec4& outline_or_default = [&]() -> const ImVec4 {
+//                    if (outline.has_value())
+//                        return outline.value();
+//                    else
+//                        return IMPLOT_AUTO_COL;
+//                }();
+//
+//                ImPlot::SetNextMarkerStyle(marker_or_default, size, fill_or_default, weight, outline_or_default);
+//            };
+//
+//            SetNextMarkerStyle_adapt_mutable_param_with_default_value(marker, size, fill, weight, outline);
+//        },
+//        nb::arg("marker") = nb::none(), nb::arg("size") = IMPLOT_AUTO, nb::arg("fill") = nb::none(), nb::arg("weight") = IMPLOT_AUTO, nb::arg("outline") = nb::none(),
+//        " Set the marker style for the next item only.\n---\nPython bindings defaults:\n    If any of the params below is None, then its default value below will be used:\n        marker: IMPLOT_AUTO\n        fill: IMPLOT_AUTO_COL\n        outline: IMPLOT_AUTO_COL");
+//
+//    m.def("set_next_error_bar_style",
+//        [](const std::optional<const ImVec4> & col = std::nullopt, float size = IMPLOT_AUTO, float weight = IMPLOT_AUTO)
+//        {
+//            auto SetNextErrorBarStyle_adapt_mutable_param_with_default_value = [](const std::optional<const ImVec4> & col = std::nullopt, float size = IMPLOT_AUTO, float weight = IMPLOT_AUTO)
+//            {
+//
+//                const ImVec4& col_or_default = [&]() -> const ImVec4 {
+//                    if (col.has_value())
+//                        return col.value();
+//                    else
+//                        return IMPLOT_AUTO_COL;
+//                }();
+//
+//                ImPlot::SetNextErrorBarStyle(col_or_default, size, weight);
+//            };
+//
+//            SetNextErrorBarStyle_adapt_mutable_param_with_default_value(col, size, weight);
+//        },
+//        nb::arg("col") = nb::none(), nb::arg("size") = IMPLOT_AUTO, nb::arg("weight") = IMPLOT_AUTO,
+//        " Set the error bar style for the next item only.\n---\nPython bindings defaults:\n    If col is None, then its default value will be: IMPLOT_AUTO_COL");
+//
+//    m.def("get_last_item_color",
+//        ImPlot::GetLastItemColor, "Gets the last item primary color (i.e. its legend icon color)");
+//
+//    m.def("get_style_color_name",
+//        ImPlot::GetStyleColorName,
+//        nb::arg("idx"),
+//        "Returns the null terminated string name for an ImPlotCol.",
+//        nb::rv_policy::reference);
+//
+//    m.def("get_marker_name",
+//        ImPlot::GetMarkerName,
+//        nb::arg("idx"),
+//        "Returns the null terminated string name for an ImPlotMarker.",
+//        nb::rv_policy::reference);
+//
+//    m.def("get_colormap_count",
+//        ImPlot::GetColormapCount, "Returns the number of available colormaps (i.e. the built-in + user-added count).");
+//
+//    m.def("get_colormap_name",
+//        ImPlot::GetColormapName,
+//        nb::arg("cmap"),
+//        "Returns a null terminated string name for a colormap given an index. Returns None if index is invalid.",
+//        nb::rv_policy::reference);
+//
+//    m.def("get_colormap_index",
+//        ImPlot::GetColormapIndex,
+//        nb::arg("name"),
+//        "Returns an index number for a colormap given a valid string name. Returns -1 if name is invalid.");
+//
+//    m.def("push_colormap",
+//        nb::overload_cast<ImPlotColormap>(ImPlot::PushColormap),
+//        nb::arg("cmap"),
+//        "Temporarily switch to one of the built-in (i.e. ImPlotColormap_XXX) or user-added colormaps (i.e. a return value of AddColormap). Don't forget to call PopColormap!");
+//
+//    m.def("push_colormap",
+//        nb::overload_cast<const char *>(ImPlot::PushColormap),
+//        nb::arg("name"),
+//        "Push a colormap by string name. Use built-in names such as \"Default\", \"Deep\", \"Jet\", etc. or a string you provided to AddColormap. Don't forget to call PopColormap!");
+//
+//    m.def("pop_colormap",
+//        ImPlot::PopColormap,
+//        nb::arg("count") = 1,
+//        "Undo temporary colormap modification(s). Undo multiple pushes at once by increasing count.");
+//
+//    m.def("next_colormap_color",
+//        ImPlot::NextColormapColor, " Returns the next color from the current colormap and advances the colormap for the current plot.\n Can also be used with no return value to skip colors if desired. You need to call this between Begin/EndPlot!");
+//
+//    m.def("get_colormap_size",
+//        [](const std::optional<const ImPlotColormap> & cmap = std::nullopt) -> int
+//        {
+//            auto GetColormapSize_adapt_mutable_param_with_default_value = [](const std::optional<const ImPlotColormap> & cmap = std::nullopt) -> int
+//            {
+//
+//                const ImPlotColormap& cmap_or_default = [&]() -> const ImPlotColormap {
+//                    if (cmap.has_value())
+//                        return cmap.value();
+//                    else
+//                        return IMPLOT_AUTO;
+//                }();
+//
+//                auto lambda_result = ImPlot::GetColormapSize(cmap_or_default);
+//                return lambda_result;
+//            };
+//
+//            return GetColormapSize_adapt_mutable_param_with_default_value(cmap);
+//        },
+//        nb::arg("cmap") = nb::none(),
+//        " Returns the size of a colormap.\n---\nPython bindings defaults:\n    If cmap is None, then its default value will be: IMPLOT_AUTO");
+//
+//    m.def("get_colormap_color",
+//        [](int idx, const std::optional<const ImPlotColormap> & cmap = std::nullopt) -> ImVec4
+//        {
+//            auto GetColormapColor_adapt_mutable_param_with_default_value = [](int idx, const std::optional<const ImPlotColormap> & cmap = std::nullopt) -> ImVec4
+//            {
+//
+//                const ImPlotColormap& cmap_or_default = [&]() -> const ImPlotColormap {
+//                    if (cmap.has_value())
+//                        return cmap.value();
+//                    else
+//                        return IMPLOT_AUTO;
+//                }();
+//
+//                auto lambda_result = ImPlot::GetColormapColor(idx, cmap_or_default);
+//                return lambda_result;
+//            };
+//
+//            return GetColormapColor_adapt_mutable_param_with_default_value(idx, cmap);
+//        },
+//        nb::arg("idx"), nb::arg("cmap") = nb::none(),
+//        " Returns a color from a colormap given an index >= 0 (modulo will be performed).\n---\nPython bindings defaults:\n    If cmap is None, then its default value will be: IMPLOT_AUTO");
+//
+//    m.def("sample_colormap",
+//        [](float t, const std::optional<const ImPlotColormap> & cmap = std::nullopt) -> ImVec4
+//        {
+//            auto SampleColormap_adapt_mutable_param_with_default_value = [](float t, const std::optional<const ImPlotColormap> & cmap = std::nullopt) -> ImVec4
+//            {
+//
+//                const ImPlotColormap& cmap_or_default = [&]() -> const ImPlotColormap {
+//                    if (cmap.has_value())
+//                        return cmap.value();
+//                    else
+//                        return IMPLOT_AUTO;
+//                }();
+//
+//                auto lambda_result = ImPlot::SampleColormap(t, cmap_or_default);
+//                return lambda_result;
+//            };
+//
+//            return SampleColormap_adapt_mutable_param_with_default_value(t, cmap);
+//        },
+//        nb::arg("t"), nb::arg("cmap") = nb::none(),
+//        " Sample a color from the current colormap given t between 0 and 1.\n---\nPython bindings defaults:\n    If cmap is None, then its default value will be: IMPLOT_AUTO");
+//
+//    m.def("colormap_scale",
+//        [](const char * label, double scale_min, double scale_max, const std::optional<const ImVec2> & size = std::nullopt, const char * format = "%g", ImPlotColormapScaleFlags flags = 0, const std::optional<const ImPlotColormap> & cmap = std::nullopt)
+//        {
+//            auto ColormapScale_adapt_mutable_param_with_default_value = [](const char * label, double scale_min, double scale_max, const std::optional<const ImVec2> & size = std::nullopt, const char * format = "%g", ImPlotColormapScaleFlags flags = 0, const std::optional<const ImPlotColormap> & cmap = std::nullopt)
+//            {
+//
+//                const ImVec2& size_or_default = [&]() -> const ImVec2 {
+//                    if (size.has_value())
+//                        return size.value();
+//                    else
+//                        return ImVec2(0,0);
+//                }();
+//
+//                const ImPlotColormap& cmap_or_default = [&]() -> const ImPlotColormap {
+//                    if (cmap.has_value())
+//                        return cmap.value();
+//                    else
+//                        return IMPLOT_AUTO;
+//                }();
+//
+//                ImPlot::ColormapScale(label, scale_min, scale_max, size_or_default, format, flags, cmap_or_default);
+//            };
+//
+//            ColormapScale_adapt_mutable_param_with_default_value(label, scale_min, scale_max, size, format, flags, cmap);
+//        },
+//        nb::arg("label"), nb::arg("scale_min"), nb::arg("scale_max"), nb::arg("size") = nb::none(), nb::arg("format") = "%g", nb::arg("flags") = 0, nb::arg("cmap") = nb::none(),
+//        " Shows a vertical color scale with linear spaced ticks using the specified color map. Use double hashes to hide label (e.g. \"##NoLabel\"). If scale_min > scale_max, the scale to color mapping will be reversed.\n---\nPython bindings defaults:\n    If any of the params below is None, then its default value below will be used:\n        size: ImVec2(0,0)\n        cmap: IMPLOT_AUTO");
+//
+//    m.def("colormap_slider",
+//        [](const char * label, float t, ImVec4 * out = nullptr, const char * format = "", const std::optional<const ImPlotColormap> & cmap = std::nullopt) -> std::tuple<bool, float>
+//        {
+//            auto ColormapSlider_adapt_mutable_param_with_default_value = [](const char * label, float * t, ImVec4 * out = nullptr, const char * format = "", const std::optional<const ImPlotColormap> & cmap = std::nullopt) -> bool
+//            {
+//
+//                const ImPlotColormap& cmap_or_default = [&]() -> const ImPlotColormap {
+//                    if (cmap.has_value())
+//                        return cmap.value();
+//                    else
+//                        return IMPLOT_AUTO;
+//                }();
+//
+//                auto lambda_result = ImPlot::ColormapSlider(label, t, out, format, cmap_or_default);
+//                return lambda_result;
+//            };
+//            auto ColormapSlider_adapt_modifiable_immutable_to_return = [&ColormapSlider_adapt_mutable_param_with_default_value](const char * label, float t, ImVec4 * out = nullptr, const char * format = "", const std::optional<const ImPlotColormap> & cmap = std::nullopt) -> std::tuple<bool, float>
+//            {
+//                float * t_adapt_modifiable = & t;
+//
+//                bool r = ColormapSlider_adapt_mutable_param_with_default_value(label, t_adapt_modifiable, out, format, cmap);
+//                return std::make_tuple(r, t);
+//            };
+//
+//            return ColormapSlider_adapt_modifiable_immutable_to_return(label, t, out, format, cmap);
+//        },
+//        nb::arg("label"), nb::arg("t"), nb::arg("out") = nb::none(), nb::arg("format") = "", nb::arg("cmap") = nb::none(),
+//        " Shows a horizontal slider with a colormap gradient background. Optionally returns the color sampled at t in [0 1].\n---\nPython bindings defaults:\n    If cmap is None, then its default value will be: IMPLOT_AUTO");
+//
+//    m.def("colormap_button",
+//        [](const char * label, const std::optional<const ImVec2> & size = std::nullopt, const std::optional<const ImPlotColormap> & cmap = std::nullopt) -> bool
+//        {
+//            auto ColormapButton_adapt_mutable_param_with_default_value = [](const char * label, const std::optional<const ImVec2> & size = std::nullopt, const std::optional<const ImPlotColormap> & cmap = std::nullopt) -> bool
+//            {
+//
+//                const ImVec2& size_or_default = [&]() -> const ImVec2 {
+//                    if (size.has_value())
+//                        return size.value();
+//                    else
+//                        return ImVec2(0,0);
+//                }();
+//
+//                const ImPlotColormap& cmap_or_default = [&]() -> const ImPlotColormap {
+//                    if (cmap.has_value())
+//                        return cmap.value();
+//                    else
+//                        return IMPLOT_AUTO;
+//                }();
+//
+//                auto lambda_result = ImPlot::ColormapButton(label, size_or_default, cmap_or_default);
+//                return lambda_result;
+//            };
+//
+//            return ColormapButton_adapt_mutable_param_with_default_value(label, size, cmap);
+//        },
+//        nb::arg("label"), nb::arg("size") = nb::none(), nb::arg("cmap") = nb::none(),
+//        " Shows a button with a colormap gradient brackground.\n---\nPython bindings defaults:\n    If any of the params below is None, then its default value below will be used:\n        size: ImVec2(0,0)\n        cmap: IMPLOT_AUTO");
+//
+//    m.def("bust_color_cache",
+//        [](std::optional<std::string> plot_title_id = std::nullopt)
+//        {
+//            auto BustColorCache_adapt_const_char_pointer_with_default_null = [](std::optional<std::string> plot_title_id = std::nullopt)
+//            {
+//                const char * plot_title_id_adapt_default_null = nullptr;
+//                if (plot_title_id.has_value())
+//                    plot_title_id_adapt_default_null = plot_title_id.value().c_str();
+//
+//                ImPlot::BustColorCache(plot_title_id_adapt_default_null);
+//            };
+//
+//            BustColorCache_adapt_const_char_pointer_with_default_null(plot_title_id);
+//        },
+//        nb::arg("plot_title_id") = nb::none(),
+//        " When items in a plot sample their color from a colormap, the color is cached and does not change\n unless explicitly overriden. Therefore, if you change the colormap after the item has already been plotted,\n item colors will NOT update. If you need item colors to resample the new colormap, then use this\n function to bust the cached colors. If #plot_title_id is None, then every item in EVERY existing plot\n will be cache busted. Otherwise only the plot specified by #plot_title_id will be busted. For the\n latter, this function must be called in the same ImGui ID scope that the plot is in. You should rarely if ever\n need this function, but it is available for applications that require runtime colormap swaps (e.g. Heatmaps demo).");
+//
+//    m.def("get_input_map",
+//        ImPlot::GetInputMap,
+//        "Provides access to input mapping structure for permanant modifications to controls for pan, select, etc.",
+//        nb::rv_policy::reference);
+//
+//    m.def("map_input_default",
+//        ImPlot::MapInputDefault,
+//        nb::arg("dst") = nb::none(),
+//        "Default input mapping: pan = LMB drag, box select = RMB drag, fit = LMB double click, context menu = RMB click, zoom = scroll.");
+//
+//    m.def("map_input_reverse",
+//        ImPlot::MapInputReverse,
+//        nb::arg("dst") = nb::none(),
+//        "Reverse input mapping: pan = RMB drag, box select = LMB drag, fit = LMB double click, context menu = RMB click, zoom = scroll.");
+//
+//    m.def("item_icon",
+//        nb::overload_cast<const ImVec4 &>(ImPlot::ItemIcon), nb::arg("col"));
+//
+//    m.def("item_icon",
+//        nb::overload_cast<ImU32>(ImPlot::ItemIcon), nb::arg("col"));
+//
+//    m.def("colormap_icon",
+//        ImPlot::ColormapIcon, nb::arg("cmap"));
+//
+//    m.def("get_plot_draw_list",
+//        ImPlot::GetPlotDrawList,
+//        "Get the plot draw list for custom rendering to the current plot area. Call between Begin/EndPlot.",
+//        nb::rv_policy::reference);
+//
+//    m.def("push_plot_clip_rect",
+//        ImPlot::PushPlotClipRect,
+//        nb::arg("expand") = 0,
+//        "Push clip rect for rendering to current plot area. The rect can be expanded or contracted by #expand pixels. Call between Begin/EndPlot.");
+//
+//    m.def("pop_plot_clip_rect",
+//        ImPlot::PopPlotClipRect, "Pop plot clip rect. Call between Begin/EndPlot.");
+//
+//    m.def("show_style_selector",
+//        ImPlot::ShowStyleSelector,
+//        nb::arg("label"),
+//        "Shows ImPlot style selector dropdown menu.");
+//
+//    m.def("show_colormap_selector",
+//        ImPlot::ShowColormapSelector,
+//        nb::arg("label"),
+//        "Shows ImPlot colormap selector dropdown menu.");
+//
+//    m.def("show_input_map_selector",
+//        ImPlot::ShowInputMapSelector,
+//        nb::arg("label"),
+//        "Shows ImPlot input map selector dropdown menu.");
+//
+//    m.def("show_style_editor",
+//        ImPlot::ShowStyleEditor,
+//        nb::arg("ref") = nb::none(),
+//        "Shows ImPlot style editor block (not a window).");
+//
+//    m.def("show_user_guide",
+//        ImPlot::ShowUserGuide, "Add basic help/info block for end users (not a window).");
+//
+//    m.def("show_metrics_window",
+//        [](std::optional<bool> p_popen = std::nullopt) -> std::optional<bool>
+//        {
+//            auto ShowMetricsWindow_adapt_modifiable_immutable_to_return = [](std::optional<bool> p_popen = std::nullopt) -> std::optional<bool>
+//            {
+//                bool * p_popen_adapt_modifiable = nullptr;
+//                if (p_popen.has_value())
+//                    p_popen_adapt_modifiable = & (*p_popen);
+//
+//                ImPlot::ShowMetricsWindow(p_popen_adapt_modifiable);
+//                return p_popen;
+//            };
+//
+//            return ShowMetricsWindow_adapt_modifiable_immutable_to_return(p_popen);
+//        },
+//        nb::arg("p_popen") = nb::none(),
+//        "Shows ImPlot metrics/debug information window.");
+//
+//    m.def("show_demo_window",
+//        [](std::optional<bool> p_open = std::nullopt) -> std::optional<bool>
+//        {
+//            auto ShowDemoWindow_adapt_modifiable_immutable_to_return = [](std::optional<bool> p_open = std::nullopt) -> std::optional<bool>
+//            {
+//                bool * p_open_adapt_modifiable = nullptr;
+//                if (p_open.has_value())
+//                    p_open_adapt_modifiable = & (*p_open);
+//
+//                ImPlot::ShowDemoWindow(p_open_adapt_modifiable);
+//                return p_open;
+//            };
+//
+//            return ShowDemoWindow_adapt_modifiable_immutable_to_return(p_open);
+//        },
+//        nb::arg("p_open") = nb::none(),
+//        "Shows the ImPlot demo window (add implot_demo.cpp to your sources!)");
+//    ////////////////////    </generated_from:implot.h>    ////////////////////
+//
+//    // </litgen_pydef> // Autogenerated code end
+//    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  AUTOGENERATED CODE END !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+//
+//
+//    ///////////////////////////////////////////////////////////////////////////
+//    // MANUAL BINDINGS BELOW
+//    ///////////////////////////////////////////////////////////////////////////
+//
+//    // Add a new colormap, inputs are np.array[uint32]
+//    m.def("add_colormap",
+//        [](const char * name, const nb::ndarray<> & cols, bool qual=true)
+//        {
+//            const void * values_from_pyarray = cols.data();
+//
+//            int ndim = (int)cols.ndim();
+//            int rows = static_cast<int>(cols.shape(0));
+//            int columns = ndim >= 2 ? static_cast<int>(cols.shape(1)) : -1;
+//
+//            bool is_uint32 = [&cols]()
+//            {
+//                auto uint_type = static_cast<uint8_t>(nb::dlpack::dtype_code::UInt);
+//                uint8_t buffer_type = cols.dtype().code;
+//                bool is_uint = buffer_type == uint_type;
+//                bool is32bits = cols.dtype().bits == 32;
+//                return is_uint && is32bits;
+//            }();
+//
+//            bool is_float = [&cols]()
+//            {
+//                auto float_type = static_cast<uint8_t>(nb::dlpack::dtype_code::Float);
+//                uint8_t buffer_type = cols.dtype().code;
+//                bool is_float = buffer_type == float_type;
+//                bool is_float_size = cols.dtype().bits / 8 == sizeof(float);
+//                return is_float && is_float_size;
+//            }();
+//
+//            if (is_uint32 && (ndim == 1))
+//                return ImPlot::AddColormap(name, static_cast<const uint32_t *>(values_from_pyarray), rows, qual);
+//            else if (is_float && (ndim == 2) && (columns == 4))
+//                return ImPlot::AddColormap(name, static_cast<const ImVec4 *>(values_from_pyarray), rows, qual);
+//            else
+//                throw std::runtime_error(std::string("Bad array type, expected either 1D array of type uint32, or 2D (Nx4 ->RGBA) array of type float32. Got matrix of ndim =") + std::to_string(ndim) + " for cols.");
+//
+//        }, nb::arg("name"), nb::arg("cols"), nb::arg("qual") = true,
+//        "Add a new colormap."
+//        );
+//
+//    // SetupAxisTicks, cf https://github.com/pthom/imgui_bundle/issues/81
+//    m.def("setup_axis_ticks",
+//          [](ImAxis axis, double v_min, double v_max, int n_ticks, const std::vector<std::string>& labels, bool keep_default=false)
+//          {
+//              std::vector<const char*> label_char;
+//              for (std::string const& str : labels){
+//                  label_char.push_back(str.data());
+//              }
+//              ImPlot::SetupAxisTicks(axis, v_min, v_max, n_ticks, label_char.data(), keep_default);
+//          }, nb::arg("axis"), nb::arg("v_min"), nb::arg("v_max"), nb::arg("n_ticks"), nb::arg("labels"), nb::arg("keep_default"),
+//          "Sets an axis' ticks and optionally the labels for the next plot. To keep the default ticks, set #keep_default=true."
+//    );
+//
+//    // PlotHeatmap, cf https://github.com/pthom/imgui_bundle/issues/81
+//    m.def("plot_heatmap",
+//          [](const char * label_id, const nb::ndarray<> & values, double scale_min = 0, double scale_max=0, const char * label_fmt="%.1f", const ImPlotPoint& bounds_min=ImPlotPoint(0,0), const ImPlotPoint& bounds_max=ImPlotPoint(1,1), ImPlotHeatmapFlags flags = 0)
+//          {
+//              auto PlotHeatmap_adapt_c_buffers = [](const char * label_id, const nb::ndarray<> & values, double scale_min = 0, double scale_max=0, const char * label_fmt="%.1f",  const ImPlotPoint& bounds_min=ImPlotPoint(0,0), const ImPlotPoint& bounds_max=ImPlotPoint(1,1),  ImPlotHeatmapFlags flags = 0)
+//              {
+//                  // convert nb::array to C standard buffer (const)
+//                  const void * values_from_pyarray = values.data();
+//
+//                  using np_uint_l = uint64_t;
+//                  using np_int_l = int64_t;
+//
+//                  if (values.ndim() != 2)
+//                      throw std::runtime_error("plot_heatmap expects a numpy bidimensional array ");
+//                  int rows = static_cast<int>(values.shape(0));
+//                  int cols = static_cast<int>(values.shape(1));
+//
+//                  // Define a lambda to compute the letter code for the buffer type
+//                  auto _nanobind_buffer_type_to_letter_code = [](uint8_t dtype_code, size_t sizeof_item)  -> char
+//                  {
+//                      #define DCODE(T) static_cast<uint8_t>(nb::dlpack::dtype_code::T)
+//                      const std::array<std::tuple<uint8_t, size_t, char>, 11> mappings = {{
+//                           {DCODE(UInt), 1, 'B'}, {DCODE(UInt), 2, 'H'}, {DCODE(UInt), 4, 'I'}, {DCODE(UInt), 8, 'L'},
+//                           {DCODE(Int), 1, 'b'}, {DCODE(Int), 2, 'h'}, {DCODE(Int), 4, 'i'}, {DCODE(Int), 8, 'l'},
+//                           {DCODE(Float), 4, 'f'}, {DCODE(Float), 8, 'd'}, {DCODE(Float), 16, 'g'}
+//                      }};
+//                      #undef DCODE
+//                      for (const auto& [code_val, size, letter] : mappings)
+//                          if (code_val == dtype_code && size == sizeof_item)
+//                              return letter;
+//                      throw std::runtime_error("Unsupported dtype");
+//                  };
+//
+//                  // Compute the letter code for the buffer type
+//                  uint8_t dtype_code_buffer = values.dtype().code;
+//                  size_t sizeof_item_buffer = values.dtype().bits / 8;
+//                  char values_type = _nanobind_buffer_type_to_letter_code(dtype_code_buffer, sizeof_item_buffer);
+//
+//                  // call the correct template version by casting
+//                  if (values_type == 'B')
+//                      ImPlot::PlotHeatmap(label_id, static_cast<const uint8_t *>(values_from_pyarray), rows, cols, scale_min, scale_max, label_fmt, bounds_min, bounds_max, flags);
+//                  else if (values_type == 'b')
+//                      ImPlot::PlotHeatmap(label_id, static_cast<const int8_t *>(values_from_pyarray), rows, cols, scale_min, scale_max, label_fmt, bounds_min, bounds_max, flags);
+//                  else if (values_type == 'H')
+//                      ImPlot::PlotHeatmap(label_id, static_cast<const uint16_t *>(values_from_pyarray), rows, cols, scale_min, scale_max, label_fmt, bounds_min, bounds_max, flags);
+//                  else if (values_type == 'h')
+//                      ImPlot::PlotHeatmap(label_id, static_cast<const int16_t *>(values_from_pyarray), rows, cols, scale_min, scale_max, label_fmt, bounds_min, bounds_max, flags);
+//                  else if (values_type == 'I')
+//                      ImPlot::PlotHeatmap(label_id, static_cast<const uint32_t *>(values_from_pyarray), rows, cols, scale_min, scale_max, label_fmt, bounds_min, bounds_max, flags);
+//                  else if (values_type == 'i')
+//                      ImPlot::PlotHeatmap(label_id, static_cast<const int32_t *>(values_from_pyarray), rows, cols, scale_min, scale_max, label_fmt, bounds_min, bounds_max, flags);
+//                  else if (values_type == 'L')
+//                      ImPlot::PlotHeatmap(label_id, static_cast<const np_uint_l *>(values_from_pyarray), rows, cols, scale_min, scale_max, label_fmt, bounds_min, bounds_max, flags);
+//                  else if (values_type == 'l')
+//                      ImPlot::PlotHeatmap(label_id, static_cast<const np_int_l *>(values_from_pyarray), rows, cols, scale_min, scale_max, label_fmt, bounds_min, bounds_max, flags);
+//                  else if (values_type == 'f')
+//                      ImPlot::PlotHeatmap(label_id, static_cast<const float *>(values_from_pyarray), rows, cols, scale_min, scale_max, label_fmt, bounds_min, bounds_max, flags);
+//                  else if (values_type == 'd')
+//                      ImPlot::PlotHeatmap(label_id, static_cast<const double *>(values_from_pyarray), rows, cols, scale_min, scale_max, label_fmt, bounds_min, bounds_max, flags);
+//                  else if (values_type == 'g')
+//                      ImPlot::PlotHeatmap(label_id, static_cast<const long double *>(values_from_pyarray), rows, cols, scale_min, scale_max, label_fmt, bounds_min, bounds_max, flags);
+//                  else if (values_type == 'q')
+//                      ImPlot::PlotHeatmap(label_id, static_cast<const long long *>(values_from_pyarray), rows, cols, scale_min, scale_max, label_fmt, bounds_min, bounds_max, flags);
+//                      // If we reach this point, the array type is not supported!
+//                  else
+//                      throw std::runtime_error(std::string("Bad array type ('") + values_type + "') for param values");
+//              };
+//
+//              PlotHeatmap_adapt_c_buffers(label_id, values, scale_min, scale_max, label_fmt, bounds_min, bounds_max, flags);
+//          },
+//          nb::arg("label_id"), nb::arg("values"), nb::arg("scale_min")= 0, nb::arg("scale_max") = 0, nb::arg("label_fmt")="%.1f", nb::arg("bounds_min")=ImPlotPoint(0,0), nb::arg("bounds_max")=ImPlotPoint(1,1), nb::arg("flags")=0
+//    );
+//
+//
+//    pyClassImPlotPoint.def("__str__", [](const ImPlotPoint& self) -> std::string {
+//       char r[100];
+//       snprintf(r, 100, "ImPlotPoint(%f, %f)", self.x, self.y);
+//       return r;
 //    });
-
-    nb::implicitly_convertible<nb::tuple, ImPlotPoint>();
-    nb::implicitly_convertible<nb::list, ImPlotPoint>();
-    //nb::implicitly_convertible<nb::array, ImPlotPoint>();
-    nb::implicitly_convertible<ImVec2, ImPlotPoint>();
-
-    pyClassImPlotPoint.def("__init__", [](ImPlotPoint *self, ImPlotPoint ipp) {
-        new (self) ImPlotPoint();
-        *self = ImPlotPoint(ipp.x, ipp.y);
-    }, nb::arg("implotpoint"));
+//    pyClassImPlotPoint.def("__repr__", [](const ImPlotPoint& self) -> std::string {
+//        char r[100];
+//        snprintf(r, 100, "ImPlotPoint(%f, %f)", self.x, self.y);
+//        return r;
+//    });
+//    pyClassImPlotPoint.def("__len__", [](const ImPlotPoint& self) -> size_t {
+//        return 2;
+//    });
+//    pyClassImPlotPoint.def("__iter__", [](const ImPlotPoint& self) {
+//            return nb::make_iterator(nb::type<ImPlotPoint>(), "iterator", &self.x, &self.x+2);
+//        },
+//        nb::keep_alive<0, 1>() /* Essential: keep object alive while iterator exists */
+//    );
+//    pyClassImPlotPoint.def("__init__", [](ImPlotPoint *self, nb::tuple t) {
+//        new (self) ImPlotPoint();
+//        *self = cast_to_point(std::move(t));
+//    });
+//    pyClassImPlotPoint.def("__init__", [](ImPlotPoint *self, nb::list t) {
+//        new (self) ImPlotPoint();
+//        *self = cast_to_point(std::move(t));
+//    });
+////    pyClassImPlotPoint.def("__init__", [](ImPlotPoint *self, nb::ndarray<> t) {
+////        new (self) ImPlotPoint();
+////        *self = cast_to_point(t);
+////    });
+//
+//    nb::implicitly_convertible<nb::tuple, ImPlotPoint>();
+//    nb::implicitly_convertible<nb::list, ImPlotPoint>();
+//    //nb::implicitly_convertible<nb::array, ImPlotPoint>();
+//    nb::implicitly_convertible<ImVec2, ImPlotPoint>();
+//
+//    pyClassImPlotPoint.def("__init__", [](ImPlotPoint *self, ImPlotPoint ipp) {
+//        new (self) ImPlotPoint();
+//        *self = ImPlotPoint(ipp.x, ipp.y);
+//    }, nb::arg("implotpoint"));
 
 }
 #endif // IMGUI_BUNDLE_WITH_IMPLOT
