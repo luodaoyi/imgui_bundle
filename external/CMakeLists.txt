@@ -144,6 +144,13 @@ if(NOT IMGUI_BUNDLE_DISABLE_IMGUIZMO)
     set(IMGUI_BUNDLE_WITH_IMGUIZMO ON CACHE INTERNAL "" FORCE)
 endif()
 
+# Build ImOGuizmo
+if(NOT IMGUI_BUNDLE_DISABLE_IMOGUIZMO)
+    add_simple_external_library_with_sources(imoguizmo imoguizmo)
+    target_compile_definitions(imgui_bundle INTERFACE IMGUI_BUNDLE_WITH_IMOGUIZMO)
+    set(IMGUI_BUNDLE_WITH_IMOGUIZMO ON CACHE INTERNAL "" FORCE)
+endif()
+
 # Build imgui_tex_inspect
 if(NOT IMGUI_BUNDLE_DISABLE_IMGUI_TEX_INSPECT)
     if(HELLOIMGUI_HAS_OPENGL)

@@ -142,6 +142,14 @@ def lib_imguizmo() -> ExternalLibrary:
         fork_git_url="https://github.com/pthom/ImGuizmo.git",
     )
 
+def lib_imoguizmo() -> ExternalLibrary:
+    return ExternalLibrary(
+        name="imoguizmo",
+        official_git_url="https://github.com/fknfilewalker/imoguizmo.git",
+        official_branch="main",
+        fork_git_url="https://github.com/pthom/imoguizmo.git",
+    )
+
 
 def lib_immapp() -> ExternalLibrary:
     return ExternalLibrary(
@@ -234,6 +242,7 @@ ALL_LIBS = [
     lib_imgui_toggle(),
     lib_imgui_color_text_edit(),
     lib_imguizmo(),
+    lib_imoguizmo(),
     lib_immapp(),
     lib_immvision(),
     lib_cvnp(),
@@ -278,3 +287,4 @@ def fetch_all_submodules():
         if lib.is_submodule():
             print(lib.name)
             lib.cmd_fetch_all().run()
+
